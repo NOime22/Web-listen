@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Listen - AI语音朗读助手",
+  "version": "1.0.0",
+  "description": "使用AI技术朗读选中的文本或截图中的内容，帮助用户通过听觉学习和获取信息",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "contextMenus",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://api.openai.com/*",
+    "https://texttospeech.googleapis.com/*",
+    "https://api.deepseek.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["js/content.js"],
+      "css": ["css/content.css"]
+    }
+  ],
+  "options_page": "options.html",
+  "commands": {
+    "read-selection": {
+      "description": "朗读当前选中文本"
+    },
+    "stop-reading": {
+      "description": "停止朗读"
+    }
+  }
+} 
