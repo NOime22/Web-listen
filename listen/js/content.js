@@ -81,6 +81,22 @@ function cleanupAudio() {
   }
 }
 
+async function safeGet(keysWithDefaults) {
+  return new Promise((resolve) => {
+    try {
+      if (chrome?.storage?.sync) {
+        chrome.storage.sync.get(keysWithDefaults, resolve);
+        return;
+      }
+    } catch (_) {}
+    try {
+      chrome.runtime.sendMessage({ action: 'getSettings', keys: keysWithDefaults }, (res) => resolve(res || keysWithDefaults));
+    } catch (_) {
+      resolve(keysWithDefaults);
+    }
+  });
+}
+
 // 监听文本选择事件
 document.addEventListener('mouseup', (e) => {
   const selection = window.getSelection();
@@ -93,7 +109,7 @@ document.addEventListener('mouseup', (e) => {
     const buttonY = window.scrollY + rect.top;
 
     // 如果开启自动朗读则直接朗读，否则显示按钮
-    chrome.storage.sync.get({ autoReadSelected: false }, (cfg) => {
+    safeGet({ autoReadSelected: false }).then((cfg) => {
       if (cfg.autoReadSelected) {
         readText(selectedText);
         hideFloatingButton();
@@ -120,27 +136,17 @@ function readText(text) {
     stopReading();
   }
 
-  chrome.storage.sync.get({
-    voice: 'default',
-    rate: 1.0,
-    pitch: 1.0,
-    volume: 1.0,
-    autoDetectLanguage: true,
-    preferredLanguage: 'zh-CN',
-    useAdvancedAI: false,
-    apiKey: '',
-    aiProvider: 'openai',
-    apiBaseUrl: 'https://api.openai.com/v1',
-    aiModel: 'gpt-4o-mini-tts',
-    aiVoice: 'alloy'
-  }, (settings) => {
-    // 优先使用高级AI
+  safeGet({
+    voice: 'default', rate: 1.0, pitch: 1.0, volume: 1.0,
+    autoDetectLanguage: true, preferredLanguage: 'zh-CN',
+    useAdvancedAI: true, apiKey: '', aiProvider: 'openai', apiBaseUrl: 'https://api.openai.com/v1', aiVoice: 'alloy',
+    allowLocalTTS: true
+  }).then((settings) => {
     if (settings.useAdvancedAI && settings.apiKey) {
       generateTTSViaAI(text, settings);
       return;
     }
-    // 本地TTS回退
-    speakWithWebSpeech(text, settings);
+    if (settings.allowLocalTTS) speakWithWebSpeech(text, settings);
   });
 }
 
@@ -221,22 +227,20 @@ function generateTTSViaAI(text, settings) {
   chrome.runtime.sendMessage({ action: 'generateTTS', text }, async (resp) => {
     if (!resp || !resp.success || (!resp.audioData && !resp.audioB64)) {
       isReading = false;
-      speakWithWebSpeech(text, settings);
+      if (settings.allowLocalTTS) speakWithWebSpeech(text, settings);
       return;
     }
     try {
+      const mime = resp.mimeType || 'audio/wav';
       let blob;
-      const mime = resp.mimeType || 'audio/mpeg';
       if (resp.audioB64) {
-        // 优先用 base64 构建 Blob，避免 ArrayBuffer 传递中的克隆问题
         const byteChars = atob(resp.audioB64);
         const byteNumbers = new Array(byteChars.length);
         for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
         const byteArray = new Uint8Array(byteNumbers);
         blob = new Blob([byteArray], { type: mime });
       } else {
-        const arrayBuf = resp.audioData;
-        blob = new Blob([arrayBuf], { type: mime });
+        blob = new Blob([resp.audioData], { type: mime });
       }
 
       const url = URL.createObjectURL(blob);
@@ -244,37 +248,24 @@ function generateTTSViaAI(text, settings) {
       audioPlayer = new Audio();
       audioPlayer.src = url;
       audioPlayer.onended = () => { isReading = false; cleanupAudio(); };
-      audioPlayer.onerror = (e) => { 
-        console.error("AI 音频播放器错误:", e);
-        // 使用 WebAudio 回退（从 Blob 获取 ArrayBuffer）
-        playWithWebAudio(blob).then(() => {
-          isReading = false;
-          cleanupAudio();
-        }).catch(() => {
-          isReading = false; 
-          cleanupAudio();
-          speakWithWebSpeech(text, settings);
-        });
+      audioPlayer.onerror = (e) => {
+        console.error('AI 音频播放器错误:', e);
+        isReading = false;
+        cleanupAudio();
+        playWithWebAudio(blob).catch(() => { if (settings.allowLocalTTS) speakWithWebSpeech(text, settings); });
       };
-      
       const playPromise = audioPlayer.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          console.error("AI 音频播放失败:", error);
-          // 使用 WebAudio 作为回退（从 Blob 获取 ArrayBuffer）
-          playWithWebAudio(blob).then(() => {
-            isReading = false;
-            cleanupAudio();
-          }).catch(() => {
-            isReading = false; 
-            cleanupAudio();
-            speakWithWebSpeech(text, settings);
-          });
+          console.error('AI 音频播放失败:', error);
+          isReading = false;
+          cleanupAudio();
+          playWithWebAudio(blob).catch(() => { if (settings.allowLocalTTS) speakWithWebSpeech(text, settings); });
         });
       }
     } catch (e) {
       isReading = false;
-      speakWithWebSpeech(text, settings);
+      if (settings.allowLocalTTS) speakWithWebSpeech(text, settings);
     }
   });
 }

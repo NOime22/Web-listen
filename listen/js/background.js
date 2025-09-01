@@ -178,6 +178,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // 异步响应
   }
 
+  if (request.action === 'getSettings') {
+    chrome.storage.sync.get(request.keys || {}, (res) => sendResponse(res));
+    return true;
+  }
+
+  if (request.action === 'testAI') {
+    (async () => {
+      try {
+        const text = 'Hello';
+        const settings = await new Promise(resolve => chrome.storage.sync.get({
+          aiProvider: 'openai', apiKey: '', apiBaseUrl: 'https://api.openai.com/v1', aiVoice: 'alloy', aiLanguageCode:'zh-CN', rate:1.0, pitch:1.0
+        }, resolve));
+        if (!settings.apiKey) { sendResponse({ success:false, error:'缺少API密钥' }); return; }
+        const result = await generateWithProvider(settings, text);
+        if (!result.success) { sendResponse(result); return; }
+        sendResponse({ success:true, provider: settings.aiProvider, mimeType: result.mimeType || 'unknown' });
+      } catch (e) {
+        sendResponse({ success:false, error:String(e) });
+      }
+    })();
+    return true;
+  }
+
   return true;
 });
 

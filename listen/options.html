@@ -287,13 +287,13 @@
           <option value="gemini">Gemini</option>
         </select>
       </div>
-
+      
       <div class="setting-item api-key-input">
         <label for="apiKey">API密钥</label>
         <input type="password" id="apiKey" placeholder="输入您的API密钥">
         <button class="toggle-visibility" id="toggleApiKey">👁️</button>
       </div>
-
+      
       <div class="setting-item">
         <label for="apiBaseUrl">API Base URL</label>
         <input type="text" id="apiBaseUrl" placeholder="https://api.openai.com/v1 / https://texttospeech.googleapis.com/v1 / https://api.deepseek.com / https://generativelanguage.googleapis.com/v1beta">
@@ -325,6 +325,23 @@
           <input type="checkbox" id="autoReadSelected">
           <span class="slider"></span>
         </label>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-row">
+          <span>允许本地TTS朗读</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="allowLocalTTS" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-item">
+          <button id="testAIButton" class="btn btn-primary">测试AI连接</button>
+        </div>
+        <div id="testAIResult" style="font-size:13px;color:#555;"></div>
       </div>
     </div>
   </div>

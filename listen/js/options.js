@@ -21,6 +21,9 @@ const enableOCRToggle = document.getElementById('enableOCR');
 const autoReadSelectedToggle = document.getElementById('autoReadSelected');
 const resetBtn = document.getElementById('resetBtn');
 const saveBtn = document.getElementById('saveBtn');
+const allowLocalTTSToggle = document.getElementById('allowLocalTTS');
+const testAIButton = document.getElementById('testAIButton');
+const testAIResult = document.getElementById('testAIResult');
 
 // 默认设置
 const defaultSettings = {
@@ -37,7 +40,8 @@ const defaultSettings = {
   aiVoice: 'alloy',
   aiLanguageCode: 'zh-CN',
   enableOCR: true,
-  autoReadSelected: false
+  autoReadSelected: false,
+  allowLocalTTS: true
 };
 
 // 主流AI提供商预设
@@ -107,7 +111,7 @@ function loadSettings() {
   chrome.storage.sync.get(defaultSettings, (settings) => {
     autoDetectLanguageToggle.checked = settings.autoDetectLanguage;
     preferredLanguageSelect.value = settings.preferredLanguage;
-
+    
     if (settings.voice !== 'default') {
       if (!Array.from(voiceSelect.options).some(option => option.value === settings.voice)) {
         const option = document.createElement('option');
@@ -117,11 +121,11 @@ function loadSettings() {
       }
       voiceSelect.value = settings.voice;
     }
-
+    
     rateSlider.value = settings.rate; rateValue.textContent = settings.rate.toFixed(1);
     pitchSlider.value = settings.pitch; pitchValue.textContent = settings.pitch.toFixed(1);
     volumeSlider.value = settings.volume; volumeValue.textContent = settings.volume.toFixed(1);
-
+    
     // 高级设置
     useAdvancedAIToggle.checked = settings.useAdvancedAI;
     aiProviderSelect.value = settings.aiProvider;
@@ -131,7 +135,8 @@ function loadSettings() {
     aiLanguageCodeInput.value = settings.aiLanguageCode;
     enableOCRToggle.checked = settings.enableOCR;
     autoReadSelectedToggle.checked = settings.autoReadSelected;
-
+    allowLocalTTSToggle.checked = !!settings.allowLocalTTS;
+    
     // 切换到某个提供商时，若字段为空，自动填入预设
     if (useAdvancedAIToggle.checked) {
       applyPreset(aiProviderSelect.value);
@@ -168,7 +173,8 @@ function saveSettings() {
     aiVoice: aiVoiceInput.value || providerPresets[aiProviderSelect.value]?.aiVoice,
     aiLanguageCode: aiLanguageCodeInput.value || providerPresets[aiProviderSelect.value]?.aiLanguageCode || 'zh-CN',
     enableOCR: enableOCRToggle.checked,
-    autoReadSelected: autoReadSelectedToggle.checked
+    autoReadSelected: autoReadSelectedToggle.checked,
+    allowLocalTTS: allowLocalTTSToggle.checked
   };
   chrome.storage.sync.set(settings, () => {
     const saveStatus = document.createElement('div');
@@ -230,5 +236,26 @@ volumeSlider.addEventListener('input', () => { volumeValue.textContent = parseFl
 toggleApiKeyBtn.addEventListener('click', toggleApiKeyVisibility);
 saveBtn.addEventListener('click', saveSettings);
 resetBtn.addEventListener('click', resetToDefaults);
+allowLocalTTSToggle.addEventListener('change', saveSettings);
+if (testAIButton) testAIButton.addEventListener('click', testAI);
 
 document.addEventListener('DOMContentLoaded', loadSettings); 
+
+function testAI() {
+  testAIResult.textContent = '测试中...';
+  const t0 = performance.now();
+  // 直接用 generateTTS 小样本测试
+  chrome.storage.sync.get({ aiProvider: 'openai' }, (cfg) => {
+    chrome.runtime.sendMessage({ action: 'generateTTS', text: 'Hello' }, (resp) => {
+      const t1 = performance.now();
+      const ms = Math.round(t1 - t0);
+      if (!resp || !resp.success) {
+        testAIResult.textContent = `失败：${resp?.error || '未知错误'}（耗时${ms}ms）`;
+        testAIResult.style.color = '#d93025';
+        return;
+      }
+      testAIResult.textContent = `成功：提供商=${cfg.aiProvider}，mime=${resp.mimeType || 'unknown'}（耗时${ms}ms）`;
+      testAIResult.style.color = '#188038';
+    });
+  });
+} 
