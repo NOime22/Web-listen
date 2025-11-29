@@ -536,8 +536,10 @@ class ListenApp {
     // ESC to cancel
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
-        this.captureOverlay.remove();
-        this.captureOverlay = null;
+        if (this.captureOverlay) {
+          this.captureOverlay.remove();
+          this.captureOverlay = null;
+        }
       }
     };
 

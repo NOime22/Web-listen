@@ -286,6 +286,18 @@
 .listen-btn-primary {
   background: var(--listen-primary);
   color: #000;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.listen-btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .listen-btn-secondary {

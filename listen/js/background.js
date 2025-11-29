@@ -19,9 +19,17 @@ chrome.runtime.onInstalled.addListener(() => {
 // 处理上下文菜单点击事件
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "readSelectedText" && info.selectionText) {
-    chrome.tabs.sendMessage(tab.id, { action: "readText", text: info.selectionText });
+    try {
+      chrome.tabs.sendMessage(tab.id, { action: "readText", text: info.selectionText });
+    } catch (e) {
+      // Ignore if tab closed or content script not ready
+    }
   } else if (info.menuItemId === "readFromScreenshot") {
-    chrome.tabs.sendMessage(tab.id, { action: "captureScreen" });
+    try {
+      chrome.tabs.sendMessage(tab.id, { action: "captureScreen" });
+    } catch (e) {
+      // Ignore if tab closed or content script not ready
+    }
   }
 });
 
