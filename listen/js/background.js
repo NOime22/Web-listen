@@ -37,7 +37,11 @@ chrome.commands.onCommand.addListener(async (command) => {
     try {
       await chrome.tabs.sendMessage(tabId, { action: 'ping' });
       // Content script is ready, send the capture message
-      chrome.tabs.sendMessage(tabId, { action: 'captureScreen' });
+      try {
+        chrome.tabs.sendMessage(tabId, { action: 'captureScreen' });
+      } catch (e) {
+        // Ignore if tab closed
+      }
     } catch (error) {
       // Content script not ready, inject it first
       console.log('[Background] Content script not ready, injecting...');
@@ -48,7 +52,11 @@ chrome.commands.onCommand.addListener(async (command) => {
         });
         // Wait a bit for initialization
         setTimeout(() => {
-          chrome.tabs.sendMessage(tabId, { action: 'captureScreen' });
+          try {
+            chrome.tabs.sendMessage(tabId, { action: 'captureScreen' });
+          } catch (e) {
+            // Ignore if tab closed during wait
+          }
         }, 100);
       } catch (e) {
         console.error('[Background] Failed to inject content script:', e);
