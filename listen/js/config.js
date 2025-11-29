@@ -13,7 +13,8 @@ export const Config = {
         enableOCR: true,
         enableFloatingButton: true,
         ocrMethod: 'local', // 'local' (Tesseract.js) or 'cloud' (Gemini API)
-        ocrLanguage: 'chi_sim+eng' // Tesseract language: chi_sim, chi_tra, eng, or combinations
+        ocrLanguage: 'chi_sim+eng', // Tesseract language: chi_sim, chi_tra, eng, or combinations
+        ocrEditMode: false // Edit text before reading
     },
 
     providers: {

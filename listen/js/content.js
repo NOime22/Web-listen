@@ -370,18 +370,58 @@ class ListenApp {
     this.createCaptureOverlay();
   }
 
-  createCaptureOverlay() {
-    console.log('[Listen] createCaptureOverlay called');
-    // Remove existing overlay if any
-    if (this.captureOverlay) {
-      console.log('[Listen] Removing existing overlay');
-      this.captureOverlay.remove();
-    }
+    // Edit Modal
+    this.createEditModal();
+  }
 
-    // Create overlay container
-    this.captureOverlay = document.createElement('div');
-    this.captureOverlay.id = 'listen-capture-overlay';
-    this.captureOverlay.style.cssText = `
+createEditModal() {
+  this.editModalOverlay = document.createElement('div');
+  this.editModalOverlay.className = 'listen-edit-modal-overlay';
+
+  this.editModalOverlay.innerHTML = `
+      <div class="listen-edit-modal">
+        <h3 class="listen-edit-title">Edit Text</h3>
+        <textarea class="listen-edit-textarea" placeholder="Recognized text will appear here..."></textarea>
+        <div class="listen-edit-actions">
+          <button class="listen-btn listen-btn-secondary" id="listen-edit-cancel">Cancel</button>
+          <button class="listen-btn listen-btn-primary" id="listen-edit-confirm">Read</button>
+        </div>
+      </div>
+    `;
+
+  this.shadow.appendChild(this.editModalOverlay);
+
+  // Bind events
+  const textarea = this.editModalOverlay.querySelector('.listen-edit-textarea');
+  const cancelBtn = this.editModalOverlay.querySelector('#listen-edit-cancel');
+  const confirmBtn = this.editModalOverlay.querySelector('#listen-edit-confirm');
+
+  cancelBtn.addEventListener('click', () => {
+    this.editModalOverlay.classList.remove('visible');
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    const text = textarea.value.trim();
+    if (text) {
+      this.editModalOverlay.classList.remove('visible');
+      this.expandPlayer(true); // Skip positioning
+      this.playText(text);
+    }
+  });
+}
+
+createCaptureOverlay() {
+  console.log('[Listen] createCaptureOverlay called');
+  // Remove existing overlay if any
+  if (this.captureOverlay) {
+    console.log('[Listen] Removing existing overlay');
+    this.captureOverlay.remove();
+  }
+
+  // Create overlay container
+  this.captureOverlay = document.createElement('div');
+  this.captureOverlay.id = 'listen-capture-overlay';
+  this.captureOverlay.style.cssText = `
       position: fixed;
       top: 0;
       left: 0;
@@ -392,21 +432,21 @@ class ListenApp {
       cursor: crosshair;
     `;
 
-    // Create selection box
-    this.selectionBox = document.createElement('div');
-    this.selectionBox.id = 'listen-selection-box';
-    this.selectionBox.style.cssText = `
+  // Create selection box
+  this.selectionBox = document.createElement('div');
+  this.selectionBox.id = 'listen-selection-box';
+  this.selectionBox.style.cssText = `
       position: absolute;
       border: 2px solid #1ADB87;
       background: rgba(26, 219, 135, 0.1);
       display: none;
       pointer-events: none;
     `;
-    this.captureOverlay.appendChild(this.selectionBox);
+  this.captureOverlay.appendChild(this.selectionBox);
 
-    // Create hint text
-    const hint = document.createElement('div');
-    hint.style.cssText = `
+  // Create hint text
+  const hint = document.createElement('div');
+  hint.style.cssText = `
       position: absolute;
       top: 50%;
       left: 50%;
@@ -417,225 +457,236 @@ class ListenApp {
       text-shadow: 0 2px 4px rgba(0,0,0,0.5);
       pointer-events: none;
     `;
-    hint.textContent = '拖拽选择要识别的区域，按 ESC 取消';
-    this.captureOverlay.appendChild(hint);
+  hint.textContent = '拖拽选择要识别的区域，按 ESC 取消';
+  this.captureOverlay.appendChild(hint);
 
-    document.body.appendChild(this.captureOverlay);
+  document.body.appendChild(this.captureOverlay);
 
-    // Selection state
-    let isSelecting = false;
-    let startX, startY;
+  // Selection state
+  let isSelecting = false;
+  let startX, startY;
 
-    // Mouse down - start selection
-    const onMouseDown = (e) => {
-      isSelecting = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      this.selectionBox.style.left = startX + 'px';
-      this.selectionBox.style.top = startY + 'px';
-      this.selectionBox.style.width = '0px';
-      this.selectionBox.style.height = '0px';
-      this.selectionBox.style.display = 'block';
-      hint.style.display = 'none';
-    };
+  // Mouse down - start selection
+  const onMouseDown = (e) => {
+    isSelecting = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    this.selectionBox.style.left = startX + 'px';
+    this.selectionBox.style.top = startY + 'px';
+    this.selectionBox.style.width = '0px';
+    this.selectionBox.style.height = '0px';
+    this.selectionBox.style.display = 'block';
+    hint.style.display = 'none';
+  };
 
-    // Mouse move - update selection
-    const onMouseMove = (e) => {
-      if (!isSelecting) return;
-      const currentX = e.clientX;
-      const currentY = e.clientY;
-      const width = Math.abs(currentX - startX);
-      const height = Math.abs(currentY - startY);
-      const left = Math.min(startX, currentX);
-      const top = Math.min(startY, currentY);
+  // Mouse move - update selection
+  const onMouseMove = (e) => {
+    if (!isSelecting) return;
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+    const width = Math.abs(currentX - startX);
+    const height = Math.abs(currentY - startY);
+    const left = Math.min(startX, currentX);
+    const top = Math.min(startY, currentY);
 
-      this.selectionBox.style.left = left + 'px';
-      this.selectionBox.style.top = top + 'px';
-      this.selectionBox.style.width = width + 'px';
-      this.selectionBox.style.height = height + 'px';
-    };
+    this.selectionBox.style.left = left + 'px';
+    this.selectionBox.style.top = top + 'px';
+    this.selectionBox.style.width = width + 'px';
+    this.selectionBox.style.height = height + 'px';
+  };
 
-    // Mouse up - capture region
-    const onMouseUp = async (e) => {
-      if (!isSelecting) return;
-      isSelecting = false;
+  // Mouse up - capture region
+  const onMouseUp = async (e) => {
+    if (!isSelecting) return;
+    isSelecting = false;
 
-      const width = parseInt(this.selectionBox.style.width);
-      const height = parseInt(this.selectionBox.style.height);
+    const width = parseInt(this.selectionBox.style.width);
+    const height = parseInt(this.selectionBox.style.height);
 
-      if (width < 10 || height < 10) {
-        this.captureOverlay.remove();
-        this.captureOverlay = null;
-        return;
-      }
-
-      const rect = {
-        x: parseInt(this.selectionBox.style.left),
-        y: parseInt(this.selectionBox.style.top),
-        width,
-        height
-      };
-
-      // Show loading indicator
-      hint.textContent = '正在识别文字...';
-      hint.style.display = 'block';
-      this.selectionBox.style.display = 'none';
-
-      try {
-        await this.captureAndProcess(rect);
-      } catch (error) {
-        console.error('Capture error:', error);
-        alert('OCR识别失败: ' + error.message);
-      }
-
+    if (width < 10 || height < 10) {
       this.captureOverlay.remove();
       this.captureOverlay = null;
+      return;
+    }
+
+    const rect = {
+      x: parseInt(this.selectionBox.style.left),
+      y: parseInt(this.selectionBox.style.top),
+      width,
+      height
     };
 
-    // ESC to cancel
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        this.captureOverlay.remove();
-        this.captureOverlay = null;
-      }
-    };
+    // Show loading indicator
+    hint.textContent = '正在识别文字...';
+    hint.style.display = 'block';
+    this.selectionBox.style.display = 'none';
 
-    this.captureOverlay.addEventListener('mousedown', onMouseDown);
-    this.captureOverlay.addEventListener('mousemove', onMouseMove);
-    this.captureOverlay.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('keydown', onKeyDown, { once: true });
-  }
+    try {
+      await this.captureAndProcess(rect);
+    } catch (error) {
+      console.error('Capture error:', error);
+      alert('OCR识别失败: ' + error.message);
+    }
+
+    this.captureOverlay.remove();
+    this.captureOverlay = null;
+  };
+
+  // ESC to cancel
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      this.captureOverlay.remove();
+      this.captureOverlay = null;
+    }
+  };
+
+  this.captureOverlay.addEventListener('mousedown', onMouseDown);
+  this.captureOverlay.addEventListener('mousemove', onMouseMove);
+  this.captureOverlay.addEventListener('mouseup', onMouseUp);
+  document.addEventListener('keydown', onKeyDown, { once: true });
+}
 
   async captureAndProcess(rect) {
-    // Request screenshot capture from background
-    const response = await chrome.runtime.sendMessage({ action: 'captureVisibleTab' });
+  // Request screenshot capture from background
+  const response = await chrome.runtime.sendMessage({ action: 'captureVisibleTab' });
 
-    if (!response.success) {
-      throw new Error(response.error || '截图失败');
-    }
+  if (!response.success) {
+    throw new Error(response.error || '截图失败');
+  }
 
-    // Crop the selected region
-    const croppedImage = await this.cropImage(response.dataUrl, rect);
+  // Crop the selected region
+  const croppedImage = await this.cropImage(response.dataUrl, rect);
 
-    // Send to background for cloud OCR
-    console.log('[Listen] Using cloud OCR...');
-    const ocrResponse = await chrome.runtime.sendMessage({
-      action: 'processScreenshot',
-      imageData: croppedImage
-    });
+  // Send to background for cloud OCR
+  console.log('[Listen] Using cloud OCR...');
+  const ocrResponse = await chrome.runtime.sendMessage({
+    action: 'processScreenshot',
+    imageData: croppedImage
+  });
 
-    if (!ocrResponse.success) {
-      throw new Error(ocrResponse.error || 'OCR识别失败');
-    }
+  if (!ocrResponse.success) {
+    throw new Error(ocrResponse.error || 'OCR识别失败');
+  }
 
-    // Position player near the selected region
-    // Use the center of the selection box
-    const playerLeft = rect.x + rect.width / 2 - 60; // Center horizontally (player width ~120px)
-    const playerTop = rect.y + rect.height + 10; // Below the selection box
+  // Get OCR settings
+  const settings = await chrome.runtime.sendMessage({ action: 'getSettings', keys: ['ocrEditMode'] });
 
-    // Boundary checks
-    const finalLeft = Math.max(10, Math.min(playerLeft, window.innerWidth - 130));
-    const finalTop = Math.max(10, Math.min(playerTop, window.innerHeight - 80));
+  // Position player near the selected region (for both edit mode and direct play)
+  // Use the center of the selection box
+  const playerLeft = rect.x + rect.width / 2 - 60; // Center horizontally (player width ~120px)
+  const playerTop = rect.y + rect.height + 10; // Below the selection box
 
-    this.miniPlayer.style.left = `${finalLeft}px`;
-    this.miniPlayer.style.top = `${finalTop}px`;
+  // Boundary checks
+  const finalLeft = Math.max(10, Math.min(playerLeft, window.innerWidth - 130));
+  const finalTop = Math.max(10, Math.min(playerTop, window.innerHeight - 80));
 
-    // Play the extracted text
+  this.miniPlayer.style.left = `${finalLeft}px`;
+  this.miniPlayer.style.top = `${finalTop}px`;
+
+  if (settings.ocrEditMode) {
+    // Show edit modal
+    const textarea = this.editModalOverlay.querySelector('.listen-edit-textarea');
+    textarea.value = ocrResponse.text;
+    this.editModalOverlay.classList.add('visible');
+    textarea.focus();
+  } else {
+    // Direct play
     this.selectedText = ocrResponse.text;
     this.expandPlayer(true); // Skip positioning - we already set it above
     this.playText(ocrResponse.text);
   }
+}
 
-  cropImage(dataUrl, rect) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+cropImage(dataUrl, rect) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
 
-        // Account for device pixel ratio
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
+      // Account for device pixel ratio
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
 
-        ctx.drawImage(
-          img,
-          rect.x * dpr, rect.y * dpr, rect.width * dpr, rect.height * dpr,
-          0, 0, rect.width * dpr, rect.height * dpr
-        );
+      ctx.drawImage(
+        img,
+        rect.x * dpr, rect.y * dpr, rect.width * dpr, rect.height * dpr,
+        0, 0, rect.width * dpr, rect.height * dpr
+      );
 
-        resolve(canvas.toDataURL('image/png'));
-      };
-      img.src = dataUrl;
-    });
-  }
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.src = dataUrl;
+  });
+}
 
   async loadTesseract() {
-    if (this.tesseractLoaded) return;
+  if (this.tesseractLoaded) return;
 
-    console.log('[Listen] Loading Tesseract.js...');
+  console.log('[Listen] Loading Tesseract.js...');
 
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = chrome.runtime.getURL('lib/tesseract.min.js');
-      script.onload = () => {
-        console.log('[Listen] Tesseract.js loaded');
-        // Wait a bit for Tesseract to be available globally
-        setTimeout(() => {
-          if (typeof Tesseract !== 'undefined') {
-            this.tesseractLoaded = true;
-            resolve();
-          } else {
-            reject(new Error('Tesseract global object not found'));
-          }
-        }, 100);
-      };
-      script.onerror = () => {
-        reject(new Error('Failed to load Tesseract.js'));
-      };
-      document.head.appendChild(script);
-    });
-  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('lib/tesseract.min.js');
+    script.onload = () => {
+      console.log('[Listen] Tesseract.js loaded');
+      // Wait a bit for Tesseract to be available globally
+      setTimeout(() => {
+        if (typeof Tesseract !== 'undefined') {
+          this.tesseractLoaded = true;
+          resolve();
+        } else {
+          reject(new Error('Tesseract global object not found'));
+        }
+      }, 100);
+    };
+    script.onerror = () => {
+      reject(new Error('Failed to load Tesseract.js'));
+    };
+    document.head.appendChild(script);
+  });
+}
 
   async processWithTesseract(imageData, language = 'chi_sim+eng') {
-    try {
-      // Load Tesseract if not already loaded
-      if (!this.tesseractLoaded) {
-        await this.loadTesseract();
-      }
-
-      // Check if Tesseract is available
-      if (typeof Tesseract === 'undefined') {
-        throw new Error('Tesseract library not loaded');
-      }
-
-      // Initialize worker if needed
-      if (!this.tesseractWorker) {
-        console.log('[Listen] Creating Tesseract worker...');
-        const { createWorker } = Tesseract;
-        this.tesseractWorker = await createWorker(language, 1, {
-          logger: m => console.log('[Tesseract]', m),
-          langPath: 'https://tessdata.projectnaptha.com/4.0.0'
-        });
-        console.log('[Listen] Tesseract worker created');
-      }
-
-      // Perform OCR
-      console.log('[Listen] Running OCR with language:', language);
-      const { data: { text, confidence } } = await this.tesseractWorker.recognize(imageData);
-
-      console.log('[Listen] OCR completed, confidence:', confidence);
-
-      if (!text || text.trim().length === 0) {
-        throw new Error('未识别到文字内容');
-      }
-
-      return text.trim();
-    } catch (error) {
-      console.error('[Listen] Tesseract OCR failed:', error);
-      throw new Error('本地OCR识别失败: ' + error.message);
+  try {
+    // Load Tesseract if not already loaded
+    if (!this.tesseractLoaded) {
+      await this.loadTesseract();
     }
+
+    // Check if Tesseract is available
+    if (typeof Tesseract === 'undefined') {
+      throw new Error('Tesseract library not loaded');
+    }
+
+    // Initialize worker if needed
+    if (!this.tesseractWorker) {
+      console.log('[Listen] Creating Tesseract worker...');
+      const { createWorker } = Tesseract;
+      this.tesseractWorker = await createWorker(language, 1, {
+        logger: m => console.log('[Tesseract]', m),
+        langPath: 'https://tessdata.projectnaptha.com/4.0.0'
+      });
+      console.log('[Listen] Tesseract worker created');
+    }
+
+    // Perform OCR
+    console.log('[Listen] Running OCR with language:', language);
+    const { data: { text, confidence } } = await this.tesseractWorker.recognize(imageData);
+
+    console.log('[Listen] OCR completed, confidence:', confidence);
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('未识别到文字内容');
+    }
+
+    return text.trim();
+  } catch (error) {
+    console.error('[Listen] Tesseract OCR failed:', error);
+    throw new Error('本地OCR识别失败: ' + error.message);
   }
+}
 }
 
 // Initialize

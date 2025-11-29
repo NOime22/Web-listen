@@ -7,6 +7,7 @@ const toggleApiKeyBtn = document.getElementById('toggleApiKey');
 const apiBaseUrlInput = document.getElementById('apiBaseUrl');
 const enableFloatingButtonToggle = document.getElementById('enableFloatingButton');
 const enableOCRToggle = document.getElementById('enableOCR');
+const ocrEditModeToggle = document.getElementById('ocrEditMode');
 const ocrMethodSelect = document.getElementById('ocrMethod');
 const ocrLanguageSelect = document.getElementById('ocrLanguage');
 const testAIButton = document.getElementById('testAIButton');
@@ -50,6 +51,7 @@ function loadSettings() {
     }
     if (enableFloatingButtonToggle) enableFloatingButtonToggle.checked = settings.enableFloatingButton !== false;
     if (enableOCRToggle) enableOCRToggle.checked = settings.enableOCR !== false;
+    if (ocrEditModeToggle) ocrEditModeToggle.checked = settings.ocrEditMode === true;
     if (ocrMethodSelect) ocrMethodSelect.value = settings.ocrMethod || 'local';
     if (ocrLanguageSelect) ocrLanguageSelect.value = settings.ocrLanguage || 'chi_sim+eng';
   });
@@ -69,6 +71,7 @@ function saveSettings() {
     aiVoice: voiceByProvider,
     enableFloatingButton: enableFloatingButtonToggle ? enableFloatingButtonToggle.checked : true,
     enableOCR: enableOCRToggle ? enableOCRToggle.checked : true,
+    ocrEditMode: ocrEditModeToggle ? ocrEditModeToggle.checked : false,
     ocrMethod: ocrMethodSelect ? ocrMethodSelect.value : 'local',
     ocrLanguage: ocrLanguageSelect ? ocrLanguageSelect.value : 'chi_sim+eng',
     // 保留但不在 UI 展示
