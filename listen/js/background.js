@@ -80,42 +80,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       try {
         const { imageData } = request;
 
-        // Get settings
+        // Get API settings
         const stored = await chrome.storage.sync.get(Config.defaultSettings);
         const settings = { ...Config.defaultSettings, ...stored };
 
-        const apiKey = settings.apiKey;
-        if (!apiKey) {
+        if (!settings.apiKey) {
           throw new Error('请先在设置中配置 API Key');
         }
+
+        // Call Gemini API for OCR - use configured model or default
+        const modelName = settings.ocrModel || 'gemini-2.0-flash-exp';
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
         // Remove data URL prefix to get base64
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
 
-        // Determine API URL and Model
-        let apiUrl = '';
-        const provider = settings.aiProvider || 'gemini';
-        let baseUrl = settings.apiBaseUrl || Config.providers[provider]?.baseUrl;
-        const model = settings.aiModel || Config.providers[provider]?.defaultModel;
-
-        // Fix for legacy settings: if baseUrl contains the specific model endpoint, strip it
-        if (provider === 'gemini' && baseUrl.includes(':generateContent')) {
-          baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
-        }
-
-        if (provider === 'gemini') {
-          // Gemini format: BASE_URL/MODEL:generateContent
-          apiUrl = `${baseUrl}/${model}:generateContent?key=${apiKey}`;
-        } else {
-          // OpenAI/Custom format: BASE_URL/chat/completions
-          // Note: This assumes the custom provider supports OpenAI-compatible chat completions for vision
-          apiUrl = `${baseUrl}/chat/completions`;
-        }
-
-        // Construct Request Body
-        let body = {};
-        if (provider === 'gemini') {
-          body = {
+        const response = await fetch(`${apiUrl}?key=${settings.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             contents: [{
               parts: [
                 { text: '请识别图片中的所有文字，只返回提取的文本内容，不要添加任何说明或格式。如果没有文字，返回"未识别到文字"。' },
@@ -127,36 +110,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
               ]
             }]
-          };
-        } else {
-          // OpenAI Compatible Format
-          body = {
-            model: model,
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: "请识别图片中的所有文字，只返回提取的文本内容，不要添加任何说明或格式。如果没有文字，返回\"未识别到文字\"。" },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: `data:image/png;base64,${base64Image}`
-                    }
-                  }
-                ]
-              }
-            ],
-            max_tokens: 1000
-          };
-        }
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(provider !== 'gemini' ? { 'Authorization': `Bearer ${apiKey}` } : {})
-          },
-          body: JSON.stringify(body)
+          })
         });
 
         if (!response.ok) {
@@ -165,13 +119,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         const data = await response.json();
-        let text = '';
-
-        if (provider === 'gemini') {
-          text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        } else {
-          text = data?.choices?.[0]?.message?.content || '';
-        }
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
         if (!text || text.includes('未识别到文字')) {
           throw new Error('未识别到文字内容');

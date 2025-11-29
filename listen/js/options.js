@@ -5,12 +5,12 @@ const aiProviderSelect = document.getElementById('aiProvider');
 const apiKeyInput = document.getElementById('apiKey');
 const toggleApiKeyBtn = document.getElementById('toggleApiKey');
 const apiBaseUrlInput = document.getElementById('apiBaseUrl');
-const aiModelInput = document.getElementById('aiModel');
-const modelSuggestions = document.getElementById('modelSuggestions');
 const enableFloatingButtonToggle = document.getElementById('enableFloatingButton');
 const enableOCRToggle = document.getElementById('enableOCR');
 const ocrEditModeToggle = document.getElementById('ocrEditMode');
 const ocrMethodSelect = document.getElementById('ocrMethod');
+const ocrModelInput = document.getElementById('ocrModel');
+const ocrModelList = document.getElementById('ocrModelList');
 const ocrLanguageSelect = document.getElementById('ocrLanguage');
 const testAIButton = document.getElementById('testAIButton');
 const testAIResult = document.getElementById('testAIResult');
@@ -21,45 +21,31 @@ const saveBtn = document.getElementById('saveBtn');
 import { Config } from './config.js';
 
 const defaultSettings = Config.defaultSettings;
-const providerPresets = Config.providers;
+const providerPresets = {
+  openai: {
+    apiBaseUrl: Config.providers.openai.baseUrl,
+    aiVoice: Config.providers.openai.defaultVoice
+  },
+  gemini: {
+    apiBaseUrl: Config.providers.gemini.baseUrl,
+    aiVoice: Config.providers.gemini.defaultVoice
+  },
+  google: {
+    apiBaseUrl: Config.providers.google.baseUrl,
+    aiVoice: Config.providers.google.defaultVoice
+  }
+};
 
 function applyPreset(provider) {
   const preset = providerPresets[provider];
   if (!preset) return;
-
-  // Update Base URL if empty or matching another preset
-  if (apiBaseUrlInput) {
-    apiBaseUrlInput.value = preset.baseUrl;
-  }
-
-  // Update Model suggestions
-  if (modelSuggestions && preset.models) {
-    modelSuggestions.innerHTML = '';
-    preset.models.forEach(model => {
-      const option = document.createElement('option');
-      option.value = model;
-      modelSuggestions.appendChild(option);
-    });
-  }
-
-  // Set default model if input is empty
-  if (aiModelInput && !aiModelInput.value) {
-    aiModelInput.value = preset.defaultModel || '';
-  }
+  if (apiBaseUrlInput && !apiBaseUrlInput.value) apiBaseUrlInput.value = preset.apiBaseUrl;
 }
 
 // 加载设置
 function loadSettings() {
   chrome.storage.sync.get(defaultSettings, (settings) => {
     if (aiProviderSelect) aiProviderSelect.value = settings.aiProvider || 'gemini';
-    if (apiBaseUrlInput) apiBaseUrlInput.value = settings.apiBaseUrl || Config.providers[settings.aiProvider]?.baseUrl || '';
-    if (aiModelInput) aiModelInput.value = settings.aiModel || Config.providers[settings.aiProvider]?.defaultModel || '';
-
-    // Update suggestions based on current provider
-    applyPreset(settings.aiProvider || 'gemini');
-    // Restore user's specific model choice if applyPreset overwrote it (it shouldn't if we check value, but good to be safe)
-    if (aiModelInput && settings.aiModel) aiModelInput.value = settings.aiModel;
-    if (apiBaseUrlInput && settings.apiBaseUrl) apiBaseUrlInput.value = settings.apiBaseUrl;
     // Use the hardcoded API key from config as default if empty
     if (apiKeyInput) {
       const apiKey = settings.apiKey && settings.apiKey.trim() !== '' ? settings.apiKey : Config.defaultSettings.apiKey;
@@ -69,6 +55,7 @@ function loadSettings() {
     if (enableOCRToggle) enableOCRToggle.checked = settings.enableOCR !== false;
     if (ocrEditModeToggle) ocrEditModeToggle.checked = settings.ocrEditMode === true;
     if (ocrMethodSelect) ocrMethodSelect.value = settings.ocrMethod || 'local';
+    if (ocrModelInput) ocrModelInput.value = settings.ocrModel || Config.defaultSettings.ocrModel;
     if (ocrLanguageSelect) ocrLanguageSelect.value = settings.ocrLanguage || 'chi_sim+eng';
   });
 }
@@ -77,20 +64,19 @@ function loadSettings() {
 function saveSettings() {
   // 根据 Model 自动补齐 Voice（无 UI，但需要存储以供后端使用）
   const provider = aiProviderSelect ? aiProviderSelect.value : 'gemini';
-  // Voice is less critical now, can be handled by backend or default
-  const voiceByProvider = providerPresets[provider]?.defaultVoice || 'Kore';
+  const voiceByProvider = providerPresets[provider]?.aiVoice || 'Kore';
 
   const settings = {
     useAdvancedAI: true,
     aiProvider: provider,
     apiKey: apiKeyInput ? apiKeyInput.value : '',
-    apiBaseUrl: apiBaseUrlInput ? apiBaseUrlInput.value : '',
-    aiModel: aiModelInput ? aiModelInput.value : '',
+    apiBaseUrl: apiBaseUrlInput && apiBaseUrlInput.value ? apiBaseUrlInput.value : (providerPresets[provider]?.apiBaseUrl || ''),
     aiVoice: voiceByProvider,
     enableFloatingButton: enableFloatingButtonToggle ? enableFloatingButtonToggle.checked : true,
     enableOCR: enableOCRToggle ? enableOCRToggle.checked : true,
     ocrEditMode: ocrEditModeToggle ? ocrEditModeToggle.checked : false,
     ocrMethod: ocrMethodSelect ? ocrMethodSelect.value : 'local',
+    ocrModel: ocrModelInput ? ocrModelInput.value : Config.defaultSettings.ocrModel,
     ocrLanguage: ocrLanguageSelect ? ocrLanguageSelect.value : 'chi_sim+eng',
     // 保留但不在 UI 展示
     rate: 1.0,
@@ -121,6 +107,17 @@ function saveSettings() {
 function resetToDefaults() {
   if (!confirm('确定要重置所有设置为默认值吗？')) return;
   chrome.storage.sync.set(defaultSettings, () => {
+    // Populate OCR Model List
+    if (ocrModelList) {
+      Config.ocrModels.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.value;
+        option.label = model.label;
+        ocrModelList.appendChild(option);
+      });
+    }
+
+    // Load settings
     loadSettings();
     const r = document.createElement('div');
     r.textContent = '已重置为默认设置';
