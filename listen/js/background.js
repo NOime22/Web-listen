@@ -95,8 +95,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Determine API URL and Model
         let apiUrl = '';
         const provider = settings.aiProvider || 'gemini';
-        const baseUrl = settings.apiBaseUrl || Config.providers[provider]?.baseUrl;
+        let baseUrl = settings.apiBaseUrl || Config.providers[provider]?.baseUrl;
         const model = settings.aiModel || Config.providers[provider]?.defaultModel;
+
+        // Fix for legacy settings: if baseUrl contains the specific model endpoint, strip it
+        if (provider === 'gemini' && baseUrl.includes(':generateContent')) {
+          baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+        }
 
         if (provider === 'gemini') {
           // Gemini format: BASE_URL/MODEL:generateContent
