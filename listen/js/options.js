@@ -43,7 +43,8 @@ function applyPreset(provider) {
 function loadSettings() {
   chrome.storage.sync.get(defaultSettings, (settings) => {
     if (aiProviderSelect) aiProviderSelect.value = settings.aiProvider || 'gemini';
-    if (apiKeyInput) apiKeyInput.value = settings.apiKey || '';
+    // Use the hardcoded API key from config as default
+    if (apiKeyInput) apiKeyInput.value = settings.apiKey || Config.defaultSettings.apiKey || '';
     if (enableFloatingButtonToggle) enableFloatingButtonToggle.checked = settings.enableFloatingButton !== false;
     if (enableOCRToggle) enableOCRToggle.checked = settings.enableOCR !== false;
     if (ocrMethodSelect) ocrMethodSelect.value = settings.ocrMethod || 'local';
