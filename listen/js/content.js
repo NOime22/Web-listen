@@ -522,6 +522,18 @@ class ListenApp {
       throw new Error(ocrResponse.error || 'OCR识别失败');
     }
 
+    // Position player near the selected region
+    // Use the center of the selection box
+    const playerLeft = rect.x + rect.width / 2 - 60; // Center horizontally (player width ~120px)
+    const playerTop = rect.y + rect.height + 10; // Below the selection box
+
+    // Boundary checks
+    const finalLeft = Math.max(10, Math.min(playerLeft, window.innerWidth - 130));
+    const finalTop = Math.max(10, Math.min(playerTop, window.innerHeight - 80));
+
+    this.miniPlayer.style.left = `${finalLeft}px`;
+    this.miniPlayer.style.top = `${finalTop}px`;
+
     // Play the extracted text
     this.selectedText = ocrResponse.text;
     this.expandPlayer();
