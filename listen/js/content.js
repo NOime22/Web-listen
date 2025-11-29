@@ -1,312 +1,348 @@
-// 内容脚本 - 处理文本选择和朗读功能
+// Listen Content Script - Shadow DOM Version
 
-// 全局变量
-let isReading = false;
-let speechSynthesis = window.speechSynthesis;
-let speechUtterance = null;
-let selectedText = '';
-let floatingButton = null;
-let audioPlayer = null;
-let currentObjectUrl = null;
-let audioContext = null;
-let audioBufferSource = null;
+class ListenApp {
+  constructor() {
+    this.host = null;
+    this.shadow = null;
+    this.container = null;
+    this.floatIcon = null;
+    this.miniPlayer = null;
+    this.selectedText = '';
+    this.isReading = false;
+    this.audioPlayer = null;
+    this.currentRate = 1.0;
 
-// 创建悬浮按钮
-function createFloatingButton() {
-  if (floatingButton) {
-    document.body.removeChild(floatingButton);
+    this.init();
   }
-  
-  floatingButton = document.createElement('div');
-  floatingButton.id = 'listen-floating-button';
-  floatingButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm1-11h-2v4H7v2h4v4h2v-4h4v-2h-4V8z"/></svg>';
-  floatingButton.style.display = 'none';
-  
-  floatingButton.addEventListener('click', () => {
-    if (selectedText) {
-      readText(selectedText);
-    }
-  });
-  
-  document.body.appendChild(floatingButton);
-}
 
-// 显示悬浮按钮在选中文本附近
-function showFloatingButton(x, y) {
-  if (!floatingButton) {
-    createFloatingButton();
+  init() {
+    this.createShadowDOM();
+    this.bindEvents();
+    this.listenToMessages();
   }
-  
-  floatingButton.style.display = 'flex';
-  floatingButton.style.left = `${x}px`;
-  floatingButton.style.top = `${y}px`;
-}
 
-// 隐藏悬浮按钮
-function hideFloatingButton() {
-  if (floatingButton) {
-    floatingButton.style.display = 'none';
-  }
-}
-
-// 停止并释放 WebAudio
-function cleanupWebAudio() {
-  try {
-    if (audioBufferSource) {
-      audioBufferSource.stop(0);
-      audioBufferSource.disconnect();
-      audioBufferSource = null;
-    }
-  } catch (_) {}
-  try {
-    if (audioContext) {
-      // 不立即关闭，以避免频繁创建销毁，可按需保持；此处选择关闭释放资源
-      audioContext.close();
-    }
-  } catch (_) {}
-  audioContext = null;
-}
-
-// 清理音频资源
-function cleanupAudio() {
-  if (audioPlayer) {
-    audioPlayer.pause();
-    // 将 src 设为 '' 会导致 NotSupportedError，所以我们只将播放器设为 null
-    audioPlayer = null;
-  }
-  cleanupWebAudio();
-  if (currentObjectUrl) {
-    URL.revokeObjectURL(currentObjectUrl);
-    currentObjectUrl = null;
-  }
-}
-
-async function safeGet(keysWithDefaults) {
-  return new Promise((resolve) => {
-    try {
-      if (chrome?.storage?.sync) {
-        chrome.storage.sync.get(keysWithDefaults, resolve);
-        return;
-      }
-    } catch (_) {}
-    try {
-      chrome.runtime.sendMessage({ action: 'getSettings', keys: keysWithDefaults }, (res) => resolve(res || keysWithDefaults));
-    } catch (_) {
-      resolve(keysWithDefaults);
-    }
-  });
-}
-
-// 监听文本选择事件
-document.addEventListener('mouseup', (e) => {
-  const selection = window.getSelection();
-  selectedText = selection.toString().trim();
-  
-  if (selectedText) {
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    const buttonX = rect.right;
-    const buttonY = window.scrollY + rect.top;
-
-    // 如果开启自动朗读则直接朗读，否则显示按钮
-    safeGet({ autoReadSelected: false }).then((cfg) => {
-      if (cfg.autoReadSelected) {
-        readText(selectedText);
-        hideFloatingButton();
-      } else {
-        showFloatingButton(buttonX, buttonY);
-      }
+  createShadowDOM() {
+    // Create host element
+    this.host = document.createElement('div');
+    this.host.id = 'listen-extension-host';
+    // Ensure host is always on top but doesn't block clicks initially
+    Object.assign(this.host.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '0',
+      height: '0',
+      zIndex: '2147483647',
+      pointerEvents: 'none'
     });
-  } else {
-    hideFloatingButton();
-  }
-});
+    document.body.appendChild(this.host);
 
-// 点击页面其他区域时隐藏按钮
-document.addEventListener('click', (e) => {
-  if (floatingButton && !floatingButton.contains(e.target)) {
-    hideFloatingButton();
-  }
-});
+    // Create Shadow Root
+    this.shadow = this.host.attachShadow({ mode: 'open' });
 
-// 朗读文本函数
-function readText(text) {
-  if (!text || !text.trim()) return;
-  if (isReading) {
-    stopReading();
+    // Inject Styles
+    const styleLink1 = document.createElement('link');
+    styleLink1.rel = 'stylesheet';
+    styleLink1.href = chrome.runtime.getURL('css/design-system.css');
+
+    const styleLink2 = document.createElement('link');
+    styleLink2.rel = 'stylesheet';
+    styleLink2.href = chrome.runtime.getURL('css/content.css');
+
+    this.shadow.appendChild(styleLink1);
+    this.shadow.appendChild(styleLink2);
+
+    // Create Container
+    this.container = document.createElement('div');
+    this.container.id = 'listen-container';
+    this.shadow.appendChild(this.container);
+
+    // Create UI Elements
+    this.createUI();
   }
 
-  safeGet({
-    voice: 'default', rate: 1.0, pitch: 1.0, volume: 1.0,
-    autoDetectLanguage: true, preferredLanguage: 'zh-CN',
-    useAdvancedAI: true, apiKey: '', aiProvider: 'openai', apiBaseUrl: 'https://api.openai.com/v1', aiVoice: 'alloy',
-    allowLocalTTS: true
-  }).then((settings) => {
-    if (settings.useAdvancedAI && settings.apiKey) {
-      generateTTSViaAI(text, settings);
-      return;
-    }
-    if (settings.allowLocalTTS) speakWithWebSpeech(text, settings);
-  });
-}
+  createUI() {
+    // Float Icon
+    this.floatIcon = document.createElement('div');
+    this.floatIcon.className = 'listen-float-icon';
+    this.floatIcon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+    this.container.appendChild(this.floatIcon);
 
-function speakWithWebSpeech(text, settings) {
-  cleanupAudio();
-  speechUtterance = new SpeechSynthesisUtterance(text);
-  speechUtterance.rate = settings.rate;
-  speechUtterance.pitch = settings.pitch;
-  speechUtterance.volume = settings.volume;
-  if (settings.autoDetectLanguage) {
-    if (/[^\x00-\x7F]/.test(text) && /[\u4e00-\u9fa5]/.test(text)) {
-      speechUtterance.lang = 'zh-CN';
-    } else if (/[\u4e00-\u9fa5]/.test(text)) {
-      speechUtterance.lang = 'zh-CN';
-    } else if (/[ぁ-んァ-ン]/.test(text)) {
-      speechUtterance.lang = 'ja-JP';
-    } else if (/[а-яА-Я]/.test(text)) {
-      speechUtterance.lang = 'ru-RU';
-    } else {
-      speechUtterance.lang = 'en-US';
-    }
-  } else {
-    speechUtterance.lang = settings.preferredLanguage;
-  }
-  if (settings.voice !== 'default') {
-    const voices = speechSynthesis.getVoices();
-    for (let i = 0; i < voices.length; i++) {
-      if (voices[i].name === settings.voice) {
-        speechUtterance.voice = voices[i];
-        break;
-      }
-    }
-  }
-  speechUtterance.onstart = () => { isReading = true; };
-  speechUtterance.onend = () => { isReading = false; };
-  speechUtterance.onerror = () => { isReading = false; };
-  speechSynthesis.speak(speechUtterance);
-}
+    // Mini Player
+    this.miniPlayer = document.createElement('div');
+    this.miniPlayer.className = 'listen-mini-player';
 
-async function playWithWebAudio(data) {
-  try {
-    cleanupWebAudio();
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioContext.state === 'suspended') {
-      await audioContext.resume();
+    // Play/Pause Button (Start with Play Icon)
+    this.playPauseBtn = document.createElement('button');
+    this.playPauseBtn.className = 'listen-btn listen-btn-primary';
+    this.playPauseBtn.id = 'listen-play-pause';
+    this.playPauseBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+
+    // Visualizer
+    const visualizer = document.createElement('div');
+    visualizer.className = 'listen-visualizer';
+    for (let i = 0; i < 4; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'listen-bar';
+      visualizer.appendChild(bar);
     }
 
-    let arrayBuffer;
-    if (data instanceof ArrayBuffer) {
-      arrayBuffer = data;
-    } else if (data instanceof Blob) {
-      arrayBuffer = await data.arrayBuffer();
-    } else if (data && data.buffer instanceof ArrayBuffer) {
-      arrayBuffer = data.buffer;
-    } else {
-      throw new TypeError('Unsupported audio data type for WebAudio');
-    }
+    // Speed Toggle
+    this.speedToggle = document.createElement('div');
+    this.speedToggle.className = 'listen-speed';
+    this.speedToggle.id = 'listen-speed-toggle';
+    this.speedToggle.textContent = '1.0x';
 
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    audioBufferSource = audioContext.createBufferSource();
-    audioBufferSource.buffer = audioBuffer;
-    audioBufferSource.connect(audioContext.destination);
-    return new Promise((resolve, reject) => {
-      audioBufferSource.onended = () => { resolve(); };
-      try {
-        audioBufferSource.start(0);
-      } catch (e) { reject(e); }
+    // Close Button
+    this.closeBtn = document.createElement('button');
+    this.closeBtn.className = 'listen-btn listen-close';
+    this.closeBtn.id = 'listen-close-btn';
+    // Use explicit commands and spaces to avoid parsing errors
+    this.closeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.41 L17.59 5 L12 10.59 L6.41 5 L5 6.41 L10.59 12 L5 17.59 L6.41 19 L12 13.41 L17.59 19 L19 17.59 L13.41 12 Z"/></svg>';
+
+    // Append all to miniPlayer
+    this.miniPlayer.appendChild(this.playPauseBtn);
+    this.miniPlayer.appendChild(visualizer);
+    this.miniPlayer.appendChild(this.speedToggle);
+    this.miniPlayer.appendChild(this.closeBtn);
+
+    this.container.appendChild(this.miniPlayer);
+  }
+
+  bindEvents() {
+    // Selection (Listen on document, handle in Shadow)
+    document.addEventListener('mouseup', (e) => this.handleSelection(e));
+    // Handle clicks outside to close
+    document.addEventListener('mousedown', (e) => this.handleClickOutside(e));
+
+    // UI Interactions (Inside Shadow DOM)
+    this.floatIcon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.expandPlayer();
+      this.playText(this.selectedText);
     });
-  } catch (e) {
-    console.error('WebAudio 播放失败:', e);
-    throw e;
+
+    this.playPauseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.togglePlay();
+    });
+
+    this.speedToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.cycleSpeed();
+    });
+
+    this.closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.stop();
+      this.hidePlayer();
+    });
   }
-}
 
-function generateTTSViaAI(text, settings) {
-  cleanupAudio();
-  isReading = true;
-  chrome.runtime.sendMessage({ action: 'generateTTS', text }, async (resp) => {
-    if (!resp || !resp.success || (!resp.audioData && !resp.audioB64)) {
-      isReading = false;
-      if (settings.allowLocalTTS) speakWithWebSpeech(text, settings);
-      return;
-    }
-    try {
-      const mime = resp.mimeType || 'audio/wav';
-      let blob;
-      if (resp.audioB64) {
-        const byteChars = atob(resp.audioB64);
-        const byteNumbers = new Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-        const byteArray = new Uint8Array(byteNumbers);
-        blob = new Blob([byteArray], { type: mime });
+  handleSelection(e) {
+    // Ignore clicks inside our own UI
+    if (this.host.contains(e.target)) return;
+
+    // Small delay to ensure selection is complete
+    setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection.toString().trim();
+
+      if (text) {
+        this.selectedText = text;
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+
+        // Calculate position relative to viewport
+        const x = rect.right;
+        const y = rect.top;
+
+        // Pass viewport coordinates to showIcon
+        this.showIcon(x, y);
       } else {
-        blob = new Blob([resp.audioData], { type: mime });
+        if (!this.isReading) {
+          this.hideIcon();
+        }
+      }
+    }, 10);
+  }
+
+  handleClickOutside(e) {
+    if (!this.host.contains(e.target) && !this.isReading) {
+      this.hideIcon();
+      this.hidePlayer();
+    }
+  }
+
+  showIcon(clientX, clientY) {
+    // Use viewport coordinates with pageX/Y offsets for accurate positioning
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Position relative to viewport (fixed positioning)
+    let left = clientX + 10;
+    let top = clientY - 40; // Show above the end of selection
+
+    // Safety check for viewport edges
+    if (top < 10) top = clientY + 20; // Show below if too high
+    if (left > window.innerWidth - 60) left = clientX - 60;
+    if (left < 10) left = 10;
+
+    this.floatIcon.style.left = `${left}px`;
+    this.floatIcon.style.top = `${top}px`;
+    this.floatIcon.classList.add('visible');
+    this.miniPlayer.classList.remove('active');
+  }
+
+  hideIcon() {
+    this.floatIcon.classList.remove('visible');
+  }
+
+  expandPlayer() {
+    // Get current icon position
+    const iconLeft = this.floatIcon.style.left;
+    const iconTop = this.floatIcon.style.top;
+
+    this.miniPlayer.style.left = iconLeft;
+    this.miniPlayer.style.top = iconTop;
+
+    this.hideIcon();
+    this.miniPlayer.classList.add('active');
+  }
+
+  hidePlayer() {
+    this.miniPlayer.classList.remove('active');
+  }
+
+  updatePlayIcon(isPlaying) {
+    const path = isPlaying
+      ? "M6 19h4V5H6v14zm8-14v14h4V5h-4z"
+      : "M8 5v14l11-7z";
+    this.playPauseBtn.querySelector('path').setAttribute('d', path);
+
+    if (isPlaying) {
+      this.miniPlayer.classList.add('playing');
+    } else {
+      this.miniPlayer.classList.remove('playing');
+    }
+  }
+
+  cycleSpeed() {
+    const speeds = [1.0, 1.25, 1.5, 2.0];
+    const idx = speeds.indexOf(this.currentRate);
+    this.currentRate = speeds[(idx + 1) % speeds.length];
+    this.speedToggle.textContent = `${this.currentRate}x`;
+    if (this.audioPlayer) {
+      this.audioPlayer.playbackRate = this.currentRate;
+    }
+  }
+
+  async playText(text) {
+    if (!text) return;
+    this.stop();
+    this.isReading = true;
+    this.updatePlayIcon(true);
+
+    try {
+      // Check if context is valid before sending
+      if (!chrome.runtime?.id) {
+        throw new Error('Extension context invalidated');
       }
 
-      const url = URL.createObjectURL(blob);
-      currentObjectUrl = url;
-      audioPlayer = new Audio();
-      audioPlayer.src = url;
-      audioPlayer.onended = () => { isReading = false; cleanupAudio(); };
-      audioPlayer.onerror = (e) => {
-        console.error('AI 音频播放器错误:', e);
-        isReading = false;
-        cleanupAudio();
-        playWithWebAudio(blob).catch(() => { if (settings.allowLocalTTS) speakWithWebSpeech(text, settings); });
-      };
-      const playPromise = audioPlayer.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error('AI 音频播放失败:', error);
-          isReading = false;
-          cleanupAudio();
-          playWithWebAudio(blob).catch(() => { if (settings.allowLocalTTS) speakWithWebSpeech(text, settings); });
-        });
-      }
+      chrome.runtime.sendMessage({ action: 'generateTTS', text }, (resp) => {
+        // Check for runtime error (e.g. context invalidated during request)
+        if (chrome.runtime.lastError) {
+          console.error('Runtime Error:', chrome.runtime.lastError);
+          this.handleContextInvalidated();
+          return;
+        }
+
+        if (!resp || !resp.success) {
+          console.error('TTS Failed:', resp?.error);
+          this.stop();
+          return;
+        }
+        this.playAudio(resp);
+      });
     } catch (e) {
-      isReading = false;
-      if (settings.allowLocalTTS) speakWithWebSpeech(text, settings);
+      console.error(e);
+      if (e.message.includes('Extension context invalidated')) {
+        this.handleContextInvalidated();
+      }
+      this.stop();
     }
-  });
-}
-
-// 停止朗读
-function stopReading() {
-  cleanupAudio();
-  if (speechSynthesis && speechSynthesis.speaking) {
-    speechSynthesis.cancel();
   }
-  isReading = false;
-}
 
-// 截图功能（暂时为占位符）
-function captureScreen() {
-  alert('截图功能正在开发中，敬请期待！');
-}
+  handleContextInvalidated() {
+    this.stop();
+    // Show a small toast or visual indicator in the mini-player
+    const visualizer = this.miniPlayer.querySelector('.listen-visualizer');
+    if (visualizer) {
+      visualizer.innerHTML = '<span style="font-size:10px;color:#ff4444;white-space:nowrap;">请刷新页面</span>';
+    }
+  }
 
-// 监听来自背景脚本与弹窗的消息
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "readText" && request.text) {
-    readText(request.text);
-    sendResponse({ success: true });
-  } else if (request.action === "readSelectedText") {
-    const sel = window.getSelection();
-    const txt = (sel && sel.toString && sel.toString().trim()) || selectedText;
-    if (txt) {
-      readText(txt);
-      sendResponse({ success: true });
+  playAudio(resp) {
+    const mime = resp.mimeType || 'audio/wav';
+    let blob;
+    if (resp.audioB64) {
+      const byteChars = atob(resp.audioB64);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      blob = new Blob([new Uint8Array(byteNumbers)], { type: mime });
     } else {
-      sendResponse({ success: false, error: '未检测到选中文本' });
+      blob = new Blob([new Uint8Array(resp.audioData)], { type: mime });
     }
-  } else if (request.action === "captureScreen") {
-    captureScreen();
-    sendResponse({ success: true });
-  } else if (request.action === "stopReading") {
-    stopReading();
-    sendResponse({ success: true });
-  }
-  return true;
-});
 
-// 初始化
-createFloatingButton(); 
+    const url = URL.createObjectURL(blob);
+    this.audioPlayer = new Audio(url);
+    this.audioPlayer.playbackRate = this.currentRate;
+
+    this.audioPlayer.onended = () => {
+      this.stop();
+      this.hidePlayer(); // Auto-hide when playback completes
+    };
+    this.audioPlayer.onerror = () => this.stop();
+
+    this.audioPlayer.play().catch(e => {
+      console.error('Play failed', e);
+      this.stop();
+    });
+  }
+
+  togglePlay() {
+    if (this.isReading && this.audioPlayer) {
+      if (this.audioPlayer.paused) {
+        this.audioPlayer.play();
+        this.updatePlayIcon(true);
+      } else {
+        this.audioPlayer.pause();
+        this.updatePlayIcon(false);
+      }
+    } else {
+      this.playText(this.selectedText);
+    }
+  }
+
+  stop() {
+    this.isReading = false;
+    this.updatePlayIcon(false);
+    if (this.audioPlayer) {
+      this.audioPlayer.pause();
+      this.audioPlayer = null;
+    }
+  }
+
+  listenToMessages() {
+    chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+      if (req.action === 'readText') {
+        this.selectedText = req.text;
+        this.expandPlayer();
+        this.playText(req.text);
+      }
+    });
+  }
+}
+
+// Initialize
+new ListenApp();

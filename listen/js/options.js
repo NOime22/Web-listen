@@ -1,261 +1,127 @@
 // 选项页面的JavaScript文件
 
 // 获取DOM元素
-const autoDetectLanguageToggle = document.getElementById('autoDetectLanguage');
-const preferredLanguageSelect = document.getElementById('preferredLanguage');
-const voiceSelect = document.getElementById('voice');
-const rateSlider = document.getElementById('rate');
-const rateValue = document.getElementById('rateValue');
-const pitchSlider = document.getElementById('pitch');
-const pitchValue = document.getElementById('pitchValue');
-const volumeSlider = document.getElementById('volume');
-const volumeValue = document.getElementById('volumeValue');
-const useAdvancedAIToggle = document.getElementById('useAdvancedAI');
 const aiProviderSelect = document.getElementById('aiProvider');
 const apiKeyInput = document.getElementById('apiKey');
 const toggleApiKeyBtn = document.getElementById('toggleApiKey');
 const apiBaseUrlInput = document.getElementById('apiBaseUrl');
-const aiVoiceInput = document.getElementById('aiVoice');
-const aiLanguageCodeInput = document.getElementById('aiLanguageCode');
+const enableFloatingButtonToggle = document.getElementById('enableFloatingButton');
 const enableOCRToggle = document.getElementById('enableOCR');
-const autoReadSelectedToggle = document.getElementById('autoReadSelected');
-const resetBtn = document.getElementById('resetBtn');
-const saveBtn = document.getElementById('saveBtn');
-const allowLocalTTSToggle = document.getElementById('allowLocalTTS');
 const testAIButton = document.getElementById('testAIButton');
 const testAIResult = document.getElementById('testAIResult');
+const resetBtn = document.getElementById('resetBtn');
+const saveBtn = document.getElementById('saveBtn');
 
-// 默认设置
-const defaultSettings = {
-  voice: 'default',
-  rate: 1.0,
-  pitch: 1.0,
-  volume: 1.0,
-  autoDetectLanguage: true,
-  preferredLanguage: 'zh-CN',
-  useAdvancedAI: false,
-  aiProvider: 'openai',
-  apiKey: '',
-  apiBaseUrl: 'https://api.openai.com/v1',
-  aiVoice: 'alloy',
-  aiLanguageCode: 'zh-CN',
-  enableOCR: true,
-  autoReadSelected: false,
-  allowLocalTTS: true
-};
+// 默认设置（按要求：默认 Gemini；丢弃本地TTS；自动检测语言写死为 true、无自动朗读）
+import { Config } from './config.js';
 
-// 主流AI提供商预设
+const defaultSettings = Config.defaultSettings;
 const providerPresets = {
   openai: {
-    apiBaseUrl: 'https://api.openai.com/v1',
-    aiVoice: 'alloy',
-    aiLanguageCode: ''
-  },
-  google: {
-    apiBaseUrl: 'https://texttospeech.googleapis.com/v1',
-    aiVoice: 'zh-CN-Wavenet-A',
-    aiLanguageCode: 'zh-CN'
-  },
-  deepseek: {
-    apiBaseUrl: 'https://api.deepseek.com/v1',
-    aiVoice: 'zh-cn-male',
-    aiLanguageCode: ''
+    apiBaseUrl: Config.providers.openai.baseUrl,
+    aiVoice: Config.providers.openai.defaultVoice
   },
   gemini: {
-    apiBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent',
-    aiVoice: 'Kore',
-    aiLanguageCode: ''
+    apiBaseUrl: Config.providers.gemini.baseUrl,
+    aiVoice: Config.providers.gemini.defaultVoice
+  },
+  google: {
+    apiBaseUrl: Config.providers.google.baseUrl,
+    aiVoice: Config.providers.google.defaultVoice
   }
 };
 
-// 根据AI提供商应用预设
 function applyPreset(provider) {
   const preset = providerPresets[provider];
-  if (preset) {
-    if (!apiBaseUrlInput.value && preset.apiBaseUrl) {
-      apiBaseUrlInput.value = preset.apiBaseUrl;
-    }
-    if (!aiVoiceInput.value && preset.aiVoice) {
-      aiVoiceInput.value = preset.aiVoice;
-    }
-    if (!aiLanguageCodeInput.value && preset.aiLanguageCode) {
-      aiLanguageCodeInput.value = preset.aiLanguageCode;
-    }
-  }
+  if (!preset) return;
+  if (apiBaseUrlInput && !apiBaseUrlInput.value) apiBaseUrlInput.value = preset.apiBaseUrl;
 }
 
-// 加载可用语音
-function loadVoices() {
-  while (voiceSelect.options.length > 1) {
-    voiceSelect.remove(1);
-  }
-  const voices = window.speechSynthesis.getVoices();
-  voices.forEach(voice => {
-    const option = document.createElement('option');
-    option.value = voice.name;
-    option.textContent = `${voice.name} (${voice.lang})`;
-    voiceSelect.appendChild(option);
-  });
-}
-
-if ('speechSynthesis' in window) {
-  if (window.speechSynthesis.getVoices().length === 0) {
-    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-  } else {
-    loadVoices();
-  }
-}
-
-// 加载用户设置
+// 加载设置
 function loadSettings() {
   chrome.storage.sync.get(defaultSettings, (settings) => {
-    autoDetectLanguageToggle.checked = settings.autoDetectLanguage;
-    preferredLanguageSelect.value = settings.preferredLanguage;
-    
-    if (settings.voice !== 'default') {
-      if (!Array.from(voiceSelect.options).some(option => option.value === settings.voice)) {
-        const option = document.createElement('option');
-        option.value = settings.voice;
-        option.textContent = settings.voice;
-        voiceSelect.appendChild(option);
-      }
-      voiceSelect.value = settings.voice;
-    }
-    
-    rateSlider.value = settings.rate; rateValue.textContent = settings.rate.toFixed(1);
-    pitchSlider.value = settings.pitch; pitchValue.textContent = settings.pitch.toFixed(1);
-    volumeSlider.value = settings.volume; volumeValue.textContent = settings.volume.toFixed(1);
-    
-    // 高级设置
-    useAdvancedAIToggle.checked = settings.useAdvancedAI;
-    aiProviderSelect.value = settings.aiProvider;
-    apiKeyInput.value = settings.apiKey;
-    apiBaseUrlInput.value = settings.apiBaseUrl;
-    aiVoiceInput.value = settings.aiVoice;
-    aiLanguageCodeInput.value = settings.aiLanguageCode;
-    enableOCRToggle.checked = settings.enableOCR;
-    autoReadSelectedToggle.checked = settings.autoReadSelected;
-    allowLocalTTSToggle.checked = !!settings.allowLocalTTS;
-    
-    // 切换到某个提供商时，若字段为空，自动填入预设
-    if (useAdvancedAIToggle.checked) {
-      applyPreset(aiProviderSelect.value);
-    }
-
-    updateUIState();
+    if (aiProviderSelect) aiProviderSelect.value = settings.aiProvider || 'gemini';
+    if (apiKeyInput) apiKeyInput.value = settings.apiKey || '';
+    if (apiBaseUrlInput) apiBaseUrlInput.value = settings.apiBaseUrl || providerPresets[aiProviderSelect.value]?.apiBaseUrl || '';
+    if (enableFloatingButtonToggle) enableFloatingButtonToggle.checked = settings.enableFloatingButton !== false;
+    if (enableOCRToggle) enableOCRToggle.checked = settings.enableOCR !== false;
   });
-}
-
-// 更新UI状态
-function updateUIState() {
-  preferredLanguageSelect.disabled = autoDetectLanguageToggle.checked;
-  const enabled = useAdvancedAIToggle.checked;
-  aiProviderSelect.disabled = !enabled;
-  apiKeyInput.disabled = !enabled;
-  apiBaseUrlInput.disabled = !enabled;
-  aiVoiceInput.disabled = !enabled;
-  aiLanguageCodeInput.disabled = !enabled;
 }
 
 // 保存设置
 function saveSettings() {
+  // 根据 Model 自动补齐 Voice（无 UI，但需要存储以供后端使用）
+  const provider = aiProviderSelect ? aiProviderSelect.value : 'gemini';
+  const voiceByProvider = providerPresets[provider]?.aiVoice || 'Kore';
+
   const settings = {
-    voice: voiceSelect.value,
-    rate: parseFloat(rateSlider.value),
-    pitch: parseFloat(pitchSlider.value),
-    volume: parseFloat(volumeSlider.value),
-    autoDetectLanguage: autoDetectLanguageToggle.checked,
-    preferredLanguage: preferredLanguageSelect.value,
-    useAdvancedAI: useAdvancedAIToggle.checked,
-    aiProvider: aiProviderSelect.value,
-    apiKey: apiKeyInput.value,
-    apiBaseUrl: apiBaseUrlInput.value || providerPresets[aiProviderSelect.value]?.apiBaseUrl || 'https://api.openai.com/v1',
-    aiVoice: aiVoiceInput.value || providerPresets[aiProviderSelect.value]?.aiVoice,
-    aiLanguageCode: aiLanguageCodeInput.value || providerPresets[aiProviderSelect.value]?.aiLanguageCode || 'zh-CN',
-    enableOCR: enableOCRToggle.checked,
-    autoReadSelected: autoReadSelectedToggle.checked,
-    allowLocalTTS: allowLocalTTSToggle.checked
+    useAdvancedAI: true,
+    aiProvider: provider,
+    apiKey: apiKeyInput ? apiKeyInput.value : '',
+    apiBaseUrl: apiBaseUrlInput && apiBaseUrlInput.value ? apiBaseUrlInput.value : (providerPresets[provider]?.apiBaseUrl || ''),
+    aiVoice: voiceByProvider,
+    enableFloatingButton: enableFloatingButtonToggle ? enableFloatingButtonToggle.checked : true,
+    enableOCR: enableOCRToggle ? enableOCRToggle.checked : true,
+    // 保留但不在 UI 展示
+    rate: 1.0,
+    pitch: 1.0,
+    volume: 1.0,
+    autoDetectLanguage: true,
+    preferredLanguage: 'zh-CN'
   };
   chrome.storage.sync.set(settings, () => {
-    const saveStatus = document.createElement('div');
-    saveStatus.textContent = '设置已保存';
-    saveStatus.style.position = 'fixed';
-    saveStatus.style.bottom = '20px';
-    saveStatus.style.left = '50%';
-    saveStatus.style.transform = 'translateX(-50%)';
-    saveStatus.style.backgroundColor = '#4CAF50';
-    saveStatus.style.color = 'white';
-    saveStatus.style.padding = '10px 20px';
-    saveStatus.style.borderRadius = '4px';
-    saveStatus.style.zIndex = '1000';
-    document.body.appendChild(saveStatus);
-    setTimeout(() => { document.body.removeChild(saveStatus); }, 2000);
+    const s = document.createElement('div');
+    s.textContent = '设置已保存';
+    s.style.position = 'fixed'; s.style.bottom = '20px'; s.style.left = '50%'; s.style.transform = 'translateX(-50%)';
+    s.style.backgroundColor = '#14AE5C'; s.style.color = '#fff'; s.style.padding = '10px 16px'; s.style.borderRadius = '6px'; s.style.zIndex = '1000';
+    document.body.appendChild(s); setTimeout(() => { document.body.removeChild(s); }, 1600);
   });
 }
 
-// 重置为默认设置
+// 重置默认
 function resetToDefaults() {
-  if (confirm('确定要重置所有设置为默认值吗？')) {
-    chrome.storage.sync.set(defaultSettings, () => {
-      loadSettings();
-      const resetStatus = document.createElement('div');
-      resetStatus.textContent = '已重置为默认设置';
-      resetStatus.style.position = 'fixed';
-      resetStatus.style.bottom = '20px';
-      resetStatus.style.left = '50%';
-      resetStatus.style.transform = 'translateX(-50%)';
-      resetStatus.style.backgroundColor = '#FF9800';
-      resetStatus.style.color = 'white';
-      resetStatus.style.padding = '10px 20px';
-      resetStatus.style.borderRadius = '4px';
-      resetStatus.style.zIndex = '1000';
-      document.body.appendChild(resetStatus);
-      setTimeout(() => { document.body.removeChild(resetStatus); }, 2000);
-    });
-  }
+  if (!confirm('确定要重置所有设置为默认值吗？')) return;
+  chrome.storage.sync.set(defaultSettings, () => {
+    loadSettings();
+    const r = document.createElement('div');
+    r.textContent = '已重置为默认设置';
+    r.style.position = 'fixed'; r.style.bottom = '20px'; r.style.left = '50%'; r.style.transform = 'translateX(-50%)';
+    r.style.backgroundColor = '#FF9800'; r.style.color = '#fff'; r.style.padding = '10px 16px'; r.style.borderRadius = '6px'; r.style.zIndex = '1000';
+    document.body.appendChild(r); setTimeout(() => { document.body.removeChild(r); }, 1600);
+  });
 }
 
-// 切换提供商时尝试自动填充
-aiProviderSelect.addEventListener('change', () => {
-  if (!useAdvancedAIToggle.checked) return;
-  applyPreset(aiProviderSelect.value);
+// 连接测试（直接走 generateTTS）
+function testAI() {
+  if (!testAIResult) return;
+  testAIResult.textContent = '测试中...';
+  const t0 = performance.now();
+  chrome.runtime.sendMessage({ action: 'generateTTS', text: 'Hello' }, (resp) => {
+    const ms = Math.round(performance.now() - t0);
+    if (!resp || !resp.success) {
+      testAIResult.textContent = `失败：${resp?.error || '未知错误'}（耗时${ms}ms）`;
+      testAIResult.style.color = '#d93025';
+      return;
+    }
+    testAIResult.textContent = `成功：mime=${resp.mimeType || 'unknown'}（耗时${ms}ms）`;
+    testAIResult.style.color = '#188038';
+  });
+}
+
+// 事件绑定
+aIProviderBind();
+function aIProviderBind() {
+  if (aiProviderSelect) aiProviderSelect.addEventListener('change', () => { applyPreset(aiProviderSelect.value); });
+}
+if (toggleApiKeyBtn) toggleApiKeyBtn.addEventListener('click', () => {
+  if (!apiKeyInput) return;
+  const showing = apiKeyInput.type === 'password';
+  apiKeyInput.type = showing ? 'text' : 'password';
+  toggleApiKeyBtn.setAttribute('aria-pressed', showing ? 'true' : 'false');
+  toggleApiKeyBtn.title = showing ? '隐藏' : '显示';
 });
-
-// 切换API密钥可见性
-function toggleApiKeyVisibility() {
-  if (apiKeyInput.type === 'password') { apiKeyInput.type = 'text'; toggleApiKeyBtn.textContent = '🔒'; }
-  else { apiKeyInput.type = 'password'; toggleApiKeyBtn.textContent = '👁️'; }
-}
-
-// 事件监听器
-autoDetectLanguageToggle.addEventListener('change', updateUIState);
-useAdvancedAIToggle.addEventListener('change', updateUIState);
-rateSlider.addEventListener('input', () => { rateValue.textContent = parseFloat(rateSlider.value).toFixed(1); });
-pitchSlider.addEventListener('input', () => { pitchValue.textContent = parseFloat(pitchSlider.value).toFixed(1); });
-volumeSlider.addEventListener('input', () => { volumeValue.textContent = parseFloat(volumeSlider.value).toFixed(1); });
-toggleApiKeyBtn.addEventListener('click', toggleApiKeyVisibility);
-saveBtn.addEventListener('click', saveSettings);
-resetBtn.addEventListener('click', resetToDefaults);
-allowLocalTTSToggle.addEventListener('change', saveSettings);
+if (saveBtn) saveBtn.addEventListener('click', saveSettings);
+if (resetBtn) resetBtn.addEventListener('click', resetToDefaults);
 if (testAIButton) testAIButton.addEventListener('click', testAI);
 
 document.addEventListener('DOMContentLoaded', loadSettings); 
-
-function testAI() {
-  testAIResult.textContent = '测试中...';
-  const t0 = performance.now();
-  // 直接用 generateTTS 小样本测试
-  chrome.storage.sync.get({ aiProvider: 'openai' }, (cfg) => {
-    chrome.runtime.sendMessage({ action: 'generateTTS', text: 'Hello' }, (resp) => {
-      const t1 = performance.now();
-      const ms = Math.round(t1 - t0);
-      if (!resp || !resp.success) {
-        testAIResult.textContent = `失败：${resp?.error || '未知错误'}（耗时${ms}ms）`;
-        testAIResult.style.color = '#d93025';
-        return;
-      }
-      testAIResult.textContent = `成功：提供商=${cfg.aiProvider}，mime=${resp.mimeType || 'unknown'}（耗时${ms}ms）`;
-      testAIResult.style.color = '#188038';
-    });
-  });
-} 

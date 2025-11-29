@@ -1,360 +1,151 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Listen - 设置</title>
+  <title>Listen Settings</title>
+  <link rel="stylesheet" href="css/design-system.css">
   <style>
     body {
-      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #111;
+      color: var(--listen-text);
+      font-family: var(--listen-font);
       margin: 0;
-      padding: 20px;
-      background-color: #f5f5f5;
-      color: #333;
-      max-width: 800px;
-      margin: 0 auto;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
     }
-    
-    .header {
-      background-color: #4285f4;
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 500;
-    }
-    
-    .section {
-      background-color: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .section h2 {
-      margin-top: 0;
-      color: #4285f4;
-      font-size: 18px;
-      font-weight: 500;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-    
-    .setting-group {
-      margin-bottom: 20px;
-    }
-    
-    .setting-item {
-      margin-bottom: 15px;
-    }
-    
-    .setting-item label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 14px;
-      color: #555;
-    }
-    
-    .setting-item select,
-    .setting-item input {
+
+    .container {
       width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      max-width: 600px;
+    }
+
+    h1 {
+      margin-bottom: 32px;
+      font-weight: 600;
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--listen-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--listen-primary);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--listen-text-secondary);
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--listen-border);
+      border-radius: 8px;
+      color: var(--listen-text);
       font-size: 14px;
       box-sizing: border-box;
     }
-    
-    .setting-row {
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--listen-primary);
+    }
+
+    .toggle-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      padding: 8px 0;
     }
-    
-    .toggle-switch {
-      position: relative;
-      display: inline-block;
-      width: 50px;
-      height: 24px;
-    }
-    
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 24px;
-    }
-    
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 16px;
-      width: 16px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    
-    input:checked + .slider {
-      background-color: #4285f4;
-    }
-    
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-    
-    .buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    
-    .btn {
-      padding: 8px 16px;
+
+    button {
+      background: var(--listen-primary);
+      color: #000;
       border: none;
-      border-radius: 4px;
-      font-size: 14px;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: opacity 0.2s;
     }
-    
-    .btn-primary {
-      background-color: #4285f4;
-      color: white;
+
+    button:hover {
+      opacity: 0.9;
     }
-    
-    .btn-primary:hover {
-      background-color: #3367d6;
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--listen-text);
     }
-    
-    .btn-secondary {
-      background-color: #f1f1f1;
-      color: #333;
-    }
-    
-    .btn-secondary:hover {
-      background-color: #e4e4e4;
-    }
-    
-    .range-with-value {
+
+    .actions {
       display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .range-value {
-      min-width: 40px;
-      text-align: center;
-    }
-    
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      color: #777;
-      font-size: 12px;
-    }
-    
-    .api-key-input {
-      position: relative;
-    }
-    
-    .api-key-input input {
-      padding-right: 40px;
-    }
-    
-    .api-key-input .toggle-visibility {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #777;
+      gap: 12px;
+      margin-top: 32px;
     }
   </style>
 </head>
-<body>
-  <div class="header">
-    <h1>Listen - 设置</h1>
-  </div>
-  
-  <div class="section">
-    <h2>语音设置</h2>
-    
-    <div class="setting-group">
-      <div class="setting-row">
-        <span>自动检测语言</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="autoDetectLanguage" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-item">
-        <label for="preferredLanguage">首选语言</label>
-        <select id="preferredLanguage">
-          <option value="zh-CN">中文 (简体)</option>
-          <option value="zh-TW">中文 (繁体)</option>
-          <option value="en-US">英语 (美国)</option>
-          <option value="en-GB">英语 (英国)</option>
-          <option value="ja-JP">日语</option>
-          <option value="ko-KR">韩语</option>
-          <option value="fr-FR">法语</option>
-          <option value="de-DE">德语</option>
-          <option value="es-ES">西班牙语</option>
-          <option value="ru-RU">俄语</option>
-          <option value="it-IT">意大利语</option>
-          <option value="pt-BR">葡萄牙语 (巴西)</option>
-        </select>
-      </div>
-      
-      <div class="setting-item">
-        <label for="voice">语音</label>
-        <select id="voice">
-          <option value="default">默认</option>
-        </select>
-      </div>
-    </div>
-    
-    <div class="setting-group">
-      <div class="setting-item">
-        <label for="rate">语速</label>
-        <div class="range-with-value">
-          <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1">
-          <span id="rateValue" class="range-value">1.0</span>
-        </div>
-      </div>
-      
-      <div class="setting-item">
-        <label for="pitch">音调</label>
-        <div class="range-with-value">
-          <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1">
-          <span id="pitchValue" class="range-value">1.0</span>
-        </div>
-      </div>
-      
-      <div class="setting-item">
-        <label for="volume">音量</label>
-        <div class="range-with-value">
-          <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
-          <span id="volumeValue" class="range-value">1.0</span>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <div class="section">
-    <h2>高级设置</h2>
-    
-    <div class="setting-group">
-      <div class="setting-row">
-        <span>使用高级AI语音（需要API密钥）</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="useAdvancedAI">
-          <span class="slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-item">
-        <label for="aiProvider">AI提供商</label>
+
+<body class="listen-page-bg">
+  <div class="container">
+    <h1>Settings</h1>
+
+    <div class="section">
+      <div class="section-title">AI Provider</div>
+      <div class="form-group">
+        <label>Provider</label>
         <select id="aiProvider">
+          <option value="gemini">Google Gemini</option>
           <option value="openai">OpenAI</option>
-          <option value="google">Google</option>
-          <option value="deepseek">DeepSeek</option>
-          <option value="gemini">Gemini</option>
+          <option value="google">Google Cloud TTS</option>
         </select>
       </div>
-      
-      <div class="setting-item api-key-input">
-        <label for="apiKey">API密钥</label>
-        <input type="password" id="apiKey" placeholder="输入您的API密钥">
-        <button class="toggle-visibility" id="toggleApiKey">👁️</button>
-      </div>
-      
-      <div class="setting-item">
-        <label for="apiBaseUrl">API Base URL</label>
-        <input type="text" id="apiBaseUrl" placeholder="https://api.openai.com/v1 / https://texttospeech.googleapis.com/v1 / https://api.deepseek.com / https://generativelanguage.googleapis.com/v1beta">
-      </div>
-      
-      <div class="setting-item">
-        <label for="aiVoice">AI语音（如 en-US-Neural2-C）</label>
-        <input type="text" id="aiVoice" placeholder="alloy / Google 语音名 / 其他">
-      </div>
-
-      <div class="setting-item">
-        <label for="aiLanguageCode">语言代码（如 zh-CN, en-US）</label>
-        <input type="text" id="aiLanguageCode" placeholder="zh-CN">
+      <div class="form-group">
+        <label>API Key</label>
+        <input type="password" id="apiKey" placeholder="Enter your API Key">
       </div>
     </div>
-    
-    <div class="setting-group">
-      <div class="setting-row">
-        <span>启用截图OCR功能</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="enableOCR" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-      
-      <div class="setting-row">
-        <span>自动朗读选中文本</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="autoReadSelected">
-          <span class="slider"></span>
-        </label>
-      </div>
 
-      <div class="setting-group">
-        <div class="setting-row">
-          <span>允许本地TTS朗读</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="allowLocalTTS" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
+    <div class="section">
+      <div class="section-title">Preferences</div>
+      <div class="toggle-row">
+        <span>Enable Floating Button</span>
+        <input type="checkbox" id="enableFloatingButton">
       </div>
-
-      <div class="setting-group">
-        <div class="setting-item">
-          <button id="testAIButton" class="btn btn-primary">测试AI连接</button>
-        </div>
-        <div id="testAIResult" style="font-size:13px;color:#555;"></div>
+      <div class="toggle-row">
+        <span>Enable OCR</span>
+        <input type="checkbox" id="enableOCR">
       </div>
     </div>
+
+    <div class="actions">
+      <button id="saveBtn">Save Changes</button>
+      <button id="testAIButton" class="secondary">Test Connection</button>
+    </div>
+    <div id="testAIResult" style="margin-top: 12px; font-size: 13px;"></div>
   </div>
-  
-  <div class="buttons">
-    <button id="resetBtn" class="btn btn-secondary">重置为默认</button>
-    <button id="saveBtn" class="btn btn-primary">保存设置</button>
-  </div>
-  
-  <div class="footer">
-    <p>Listen - AI语音朗读助手 v1.0.0</p>
-  </div>
-  
-  <script src="js/options.js"></script>
+
+  <script src="js/options.js" type="module"></script>
 </body>
-</html> 
+
+</html>
