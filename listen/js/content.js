@@ -339,7 +339,199 @@ class ListenApp {
         this.selectedText = req.text;
         this.expandPlayer();
         this.playText(req.text);
+      } else if (req.action === 'captureScreen') {
+        this.startScreenCapture();
       }
+    });
+  }
+
+  startScreenCapture() {
+    // Create overlay for screenshot selection
+    this.createCaptureOverlay();
+  }
+
+  createCaptureOverlay() {
+    // Remove existing overlay if any
+    if (this.captureOverlay) {
+      this.captureOverlay.remove();
+    }
+
+    // Create overlay container
+    this.captureOverlay = document.createElement('div');
+    this.captureOverlay.id = 'listen-capture-overlay';
+    this.captureOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2147483647;
+      cursor: crosshair;
+    `;
+
+    // Create selection box
+    this.selectionBox = document.createElement('div');
+    this.selectionBox.id = 'listen-selection-box';
+    this.selectionBox.style.cssText = `
+      position: absolute;
+      border: 2px solid #1ADB87;
+      background: rgba(26, 219, 135, 0.1);
+      display: none;
+      pointer-events: none;
+    `;
+    this.captureOverlay.appendChild(this.selectionBox);
+
+    // Create hint text
+    const hint = document.createElement('div');
+    hint.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 18px;
+      font-family: sans-serif;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      pointer-events: none;
+    `;
+    hint.textContent = '拖拽选择要识别的区域，按 ESC 取消';
+    this.captureOverlay.appendChild(hint);
+
+    document.body.appendChild(this.captureOverlay);
+
+    // Selection state
+    let isSelecting = false;
+    let startX, startY;
+
+    // Mouse down - start selection
+    const onMouseDown = (e) => {
+      isSelecting = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      this.selectionBox.style.left = startX + 'px';
+      this.selectionBox.style.top = startY + 'px';
+      this.selectionBox.style.width = '0px';
+      this.selectionBox.style.height = '0px';
+      this.selectionBox.style.display = 'block';
+      hint.style.display = 'none';
+    };
+
+    // Mouse move - update selection
+    const onMouseMove = (e) => {
+      if (!isSelecting) return;
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+      const left = Math.min(startX, currentX);
+      const top = Math.min(startY, currentY);
+
+      this.selectionBox.style.left = left + 'px';
+      this.selectionBox.style.top = top + 'px';
+      this.selectionBox.style.width = width + 'px';
+      this.selectionBox.style.height = height + 'px';
+    };
+
+    // Mouse up - capture region
+    const onMouseUp = async (e) => {
+      if (!isSelecting) return;
+      isSelecting = false;
+
+      const width = parseInt(this.selectionBox.style.width);
+      const height = parseInt(this.selectionBox.style.height);
+
+      if (width < 10 || height < 10) {
+        this.captureOverlay.remove();
+        this.captureOverlay = null;
+        return;
+      }
+
+      const rect = {
+        x: parseInt(this.selectionBox.style.left),
+        y: parseInt(this.selectionBox.style.top),
+        width,
+        height
+      };
+
+      // Show loading indicator
+      hint.textContent = '正在识别文字...';
+      hint.style.display = 'block';
+      this.selectionBox.style.display = 'none';
+
+      try {
+        await this.captureAndProcess(rect);
+      } catch (error) {
+        console.error('Capture error:', error);
+        alert('OCR识别失败: ' + error.message);
+      }
+
+      this.captureOverlay.remove();
+      this.captureOverlay = null;
+    };
+
+    // ESC to cancel
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        this.captureOverlay.remove();
+        this.captureOverlay = null;
+      }
+    };
+
+    this.captureOverlay.addEventListener('mousedown', onMouseDown);
+    this.captureOverlay.addEventListener('mousemove', onMouseMove);
+    this.captureOverlay.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('keydown', onKeyDown, { once: true });
+  }
+
+  async captureAndProcess(rect) {
+    // Request screenshot capture from background
+    const response = await chrome.runtime.sendMessage({ action: 'captureVisibleTab' });
+
+    if (!response.success) {
+      throw new Error(response.error || '截图失败');
+    }
+
+    // Crop the selected region
+    const croppedImage = await this.cropImage(response.dataUrl, rect);
+
+    // Send to background for OCR
+    const ocrResponse = await chrome.runtime.sendMessage({
+      action: 'processScreenshot',
+      imageData: croppedImage
+    });
+
+    if (!ocrResponse.success) {
+      throw new Error(ocrResponse.error || 'OCR识别失败');
+    }
+
+    // Play the extracted text
+    this.selectedText = ocrResponse.text;
+    this.expandPlayer();
+    this.playText(ocrResponse.text);
+  }
+
+  cropImage(dataUrl, rect) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Account for device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+
+        ctx.drawImage(
+          img,
+          rect.x * dpr, rect.y * dpr, rect.width * dpr, rect.height * dpr,
+          0, 0, rect.width * dpr, rect.height * dpr
+        );
+
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.src = dataUrl;
     });
   }
 }

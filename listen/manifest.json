@@ -51,6 +51,10 @@
       "description": "停止朗读"
     },
     "ocr-and-read": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
       "description": "OCR截图并朗读"
     }
   },

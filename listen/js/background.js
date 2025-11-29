@@ -25,11 +25,75 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
+// 监听快捷键命令
+chrome.commands.onCommand.addListener((command) => {
+  if (command === 'ocr-and-read') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'captureScreen' });
+      }
+    });
+  }
+});
+
 // 监听消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "processScreenshot") {
-    sendResponse({ success: true, message: "截图处理功能正在开发中" });
-    return true;
+    (async () => {
+      try {
+        const { imageData } = request;
+
+        // Get API settings
+        const stored = await chrome.storage.sync.get(Config.defaultSettings);
+        const settings = { ...Config.defaultSettings, ...stored };
+
+        if (!settings.apiKey) {
+          throw new Error('请先在设置中配置 API Key');
+        }
+
+        // Call Gemini Vision API for OCR
+        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+
+        // Remove data URL prefix to get base64
+        const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
+
+        const response = await fetch(`${apiUrl}?key=${settings.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: '请识别图片中的所有文字，只返回提取的文本内容，不要添加任何说明或格式。如果没有文字，返回"未识别到文字"。' },
+                {
+                  inline_data: {
+                    mime_type: 'image/png',
+                    data: base64Image
+                  }
+                }
+              ]
+            }]
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`OCR API 错误: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        if (!text || text.includes('未识别到文字')) {
+          throw new Error('未识别到文字内容');
+        }
+
+        sendResponse({ success: true, text: text.trim() });
+      } catch (error) {
+        console.error('OCR Error:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true; // Async response
   }
 
   if (request.action === 'generateTTS') {
