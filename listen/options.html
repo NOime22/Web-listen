@@ -118,7 +118,19 @@
           <option value="gemini">Google Gemini</option>
           <option value="openai">OpenAI</option>
           <option value="google">Google Cloud TTS</option>
+          <option value="custom">Custom (OpenAI Compatible)</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label>Base URL</label>
+        <input type="text" id="apiBaseUrl" placeholder="https://api.openai.com/v1">
+      </div>
+      <div class="form-group">
+        <label>Model Name</label>
+        <input type="text" id="aiModel" list="modelSuggestions" placeholder="e.g., gpt-4o, gemini-1.5-flash">
+        <datalist id="modelSuggestions">
+          <!-- Populated by JS -->
+        </datalist>
       </div>
       <div class="form-group">
         <label>API Key</label>

@@ -5,6 +5,8 @@ const aiProviderSelect = document.getElementById('aiProvider');
 const apiKeyInput = document.getElementById('apiKey');
 const toggleApiKeyBtn = document.getElementById('toggleApiKey');
 const apiBaseUrlInput = document.getElementById('apiBaseUrl');
+const aiModelInput = document.getElementById('aiModel');
+const modelSuggestions = document.getElementById('modelSuggestions');
 const enableFloatingButtonToggle = document.getElementById('enableFloatingButton');
 const enableOCRToggle = document.getElementById('enableOCR');
 const ocrEditModeToggle = document.getElementById('ocrEditMode');
@@ -19,31 +21,45 @@ const saveBtn = document.getElementById('saveBtn');
 import { Config } from './config.js';
 
 const defaultSettings = Config.defaultSettings;
-const providerPresets = {
-  openai: {
-    apiBaseUrl: Config.providers.openai.baseUrl,
-    aiVoice: Config.providers.openai.defaultVoice
-  },
-  gemini: {
-    apiBaseUrl: Config.providers.gemini.baseUrl,
-    aiVoice: Config.providers.gemini.defaultVoice
-  },
-  google: {
-    apiBaseUrl: Config.providers.google.baseUrl,
-    aiVoice: Config.providers.google.defaultVoice
-  }
-};
+const providerPresets = Config.providers;
 
 function applyPreset(provider) {
   const preset = providerPresets[provider];
   if (!preset) return;
-  if (apiBaseUrlInput && !apiBaseUrlInput.value) apiBaseUrlInput.value = preset.apiBaseUrl;
+
+  // Update Base URL if empty or matching another preset
+  if (apiBaseUrlInput) {
+    apiBaseUrlInput.value = preset.baseUrl;
+  }
+
+  // Update Model suggestions
+  if (modelSuggestions && preset.models) {
+    modelSuggestions.innerHTML = '';
+    preset.models.forEach(model => {
+      const option = document.createElement('option');
+      option.value = model;
+      modelSuggestions.appendChild(option);
+    });
+  }
+
+  // Set default model if input is empty
+  if (aiModelInput && !aiModelInput.value) {
+    aiModelInput.value = preset.defaultModel || '';
+  }
 }
 
 // 加载设置
 function loadSettings() {
   chrome.storage.sync.get(defaultSettings, (settings) => {
     if (aiProviderSelect) aiProviderSelect.value = settings.aiProvider || 'gemini';
+    if (apiBaseUrlInput) apiBaseUrlInput.value = settings.apiBaseUrl || Config.providers[settings.aiProvider]?.baseUrl || '';
+    if (aiModelInput) aiModelInput.value = settings.aiModel || Config.providers[settings.aiProvider]?.defaultModel || '';
+
+    // Update suggestions based on current provider
+    applyPreset(settings.aiProvider || 'gemini');
+    // Restore user's specific model choice if applyPreset overwrote it (it shouldn't if we check value, but good to be safe)
+    if (aiModelInput && settings.aiModel) aiModelInput.value = settings.aiModel;
+    if (apiBaseUrlInput && settings.apiBaseUrl) apiBaseUrlInput.value = settings.apiBaseUrl;
     // Use the hardcoded API key from config as default if empty
     if (apiKeyInput) {
       const apiKey = settings.apiKey && settings.apiKey.trim() !== '' ? settings.apiKey : Config.defaultSettings.apiKey;
@@ -61,13 +77,15 @@ function loadSettings() {
 function saveSettings() {
   // 根据 Model 自动补齐 Voice（无 UI，但需要存储以供后端使用）
   const provider = aiProviderSelect ? aiProviderSelect.value : 'gemini';
-  const voiceByProvider = providerPresets[provider]?.aiVoice || 'Kore';
+  // Voice is less critical now, can be handled by backend or default
+  const voiceByProvider = providerPresets[provider]?.defaultVoice || 'Kore';
 
   const settings = {
     useAdvancedAI: true,
     aiProvider: provider,
     apiKey: apiKeyInput ? apiKeyInput.value : '',
-    apiBaseUrl: apiBaseUrlInput && apiBaseUrlInput.value ? apiBaseUrlInput.value : (providerPresets[provider]?.apiBaseUrl || ''),
+    apiBaseUrl: apiBaseUrlInput ? apiBaseUrlInput.value : '',
+    aiModel: aiModelInput ? aiModelInput.value : '',
     aiVoice: voiceByProvider,
     enableFloatingButton: enableFloatingButtonToggle ? enableFloatingButtonToggle.checked : true,
     enableOCR: enableOCRToggle ? enableOCRToggle.checked : true,
