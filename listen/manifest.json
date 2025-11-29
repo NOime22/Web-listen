@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Listen - AI语音朗读助手",
   "version": "1.0.0",
-  "description": "使用AI技术朗读选中的文本或截图中的内容，帮助用户通过听觉学习和获取信息",
+  "description": "使用 AI 朗读网页内容，支持多语言和自然语音。",
   "permissions": [
     "activeTab",
     "storage",
