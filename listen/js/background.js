@@ -26,19 +26,34 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 // 监听快捷键命令
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'ocr-and-read') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        // Add error handling
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'captureScreen' }, (response) => {
-          // Ignore connection errors - content script will handle it
-          if (chrome.runtime.lastError) {
-            console.log('Content script not ready, but message sent');
-          }
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tabs[0]) return;
+
+    const tabId = tabs[0].id;
+
+    // Check if content script is already injected by trying to send a ping
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+      // Content script is ready, send the capture message
+      chrome.tabs.sendMessage(tabId, { action: 'captureScreen' });
+    } catch (error) {
+      // Content script not ready, inject it first
+      console.log('[Background] Content script not ready, injecting...');
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['js/content.js']
         });
+        // Wait a bit for initialization
+        setTimeout(() => {
+          chrome.tabs.sendMessage(tabId, { action: 'captureScreen' });
+        }, 100);
+      } catch (e) {
+        console.error('[Background] Failed to inject content script:', e);
       }
-    });
+    }
   }
 });
 

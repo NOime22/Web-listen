@@ -339,7 +339,11 @@ class ListenApp {
     chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
       console.log('[Listen] Received message:', req.action);
 
-      if (req.action === 'readText') {
+      if (req.action === 'ping') {
+        // Simple ping to check if content script is loaded
+        sendResponse({ success: true });
+        return true;
+      } else if (req.action === 'readText') {
         this.selectedText = req.text;
         this.expandPlayer();
         this.playText(req.text);
