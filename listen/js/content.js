@@ -507,34 +507,21 @@ class ListenApp {
     // Crop the selected region
     const croppedImage = await this.cropImage(response.dataUrl, rect);
 
-    // Get OCR settings
-    const settings = await chrome.runtime.sendMessage({ action: 'getSettings', keys: ['ocrMethod', 'ocrLanguage', 'apiKey'] });
+    // Send to background for cloud OCR
+    console.log('[Listen] Using cloud OCR...');
+    const ocrResponse = await chrome.runtime.sendMessage({
+      action: 'processScreenshot',
+      imageData: croppedImage
+    });
 
-    let extractedText;
-
-    if (settings.ocrMethod === 'local') {
-      // Use local Tesseract OCR
-      console.log('[Listen] Using local OCR...');
-      extractedText = await this.processWithTesseract(croppedImage, settings.ocrLanguage || 'chi_sim+eng');
-    } else {
-      // Use cloud OCR
-      console.log('[Listen] Using cloud OCR...');
-      const ocrResponse = await chrome.runtime.sendMessage({
-        action: 'processScreenshot',
-        imageData: croppedImage
-      });
-
-      if (!ocrResponse.success) {
-        throw new Error(ocrResponse.error || 'OCR识别失败');
-      }
-
-      extractedText = ocrResponse.text;
+    if (!ocrResponse.success) {
+      throw new Error(ocrResponse.error || 'OCR识别失败');
     }
 
     // Play the extracted text
-    this.selectedText = extractedText;
+    this.selectedText = ocrResponse.text;
     this.expandPlayer();
-    this.playText(extractedText);
+    this.playText(ocrResponse.text);
   }
 
   cropImage(dataUrl, rect) {
@@ -564,32 +551,27 @@ class ListenApp {
   async loadTesseract() {
     if (this.tesseractLoaded) return;
 
-    console.log('[Listen] Requesting Tesseract.js injection...');
+    console.log('[Listen] Loading Tesseract.js...');
 
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ action: 'injectTesseract' }, (response) => {
-        if (chrome.runtime.lastError || !response || !response.success) {
-          reject(new Error('Failed to inject Tesseract: ' + (chrome.runtime.lastError?.message || response?.error || 'Unknown error')));
-          return;
-        }
-
-        console.log('[Listen] Tesseract.js injected, waiting for initialization...');
-
-        // Wait for Tesseract to be available
-        let attempts = 0;
-        const checkInterval = setInterval(() => {
-          attempts++;
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('lib/tesseract.min.js');
+      script.onload = () => {
+        console.log('[Listen] Tesseract.js loaded');
+        // Wait a bit for Tesseract to be available globally
+        setTimeout(() => {
           if (typeof Tesseract !== 'undefined') {
-            clearInterval(checkInterval);
-            console.log('[Listen] Tesseract.js initialized');
             this.tesseractLoaded = true;
             resolve();
-          } else if (attempts > 50) { // 5 seconds timeout
-            clearInterval(checkInterval);
-            reject(new Error('Timeout waiting for Tesseract initialization'));
+          } else {
+            reject(new Error('Tesseract global object not found'));
           }
         }, 100);
-      });
+      };
+      script.onerror = () => {
+        reject(new Error('Failed to load Tesseract.js'));
+      };
+      document.head.appendChild(script);
     });
   }
 

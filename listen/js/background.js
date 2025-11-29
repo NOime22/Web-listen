@@ -44,20 +44,6 @@ chrome.commands.onCommand.addListener((command) => {
 
 // 监听消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'injectTesseract') {
-    chrome.scripting.executeScript({
-      target: { tabId: sender.tab.id },
-      files: ['lib/tesseract.min.js']
-    }, () => {
-      if (chrome.runtime.lastError) {
-        sendResponse({ success: false, error: chrome.runtime.lastError.message });
-      } else {
-        sendResponse({ success: true });
-      }
-    });
-    return true;
-  }
-
   if (request.action === "processScreenshot") {
     (async () => {
       try {
@@ -71,9 +57,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           throw new Error('请先在设置中配置 API Key');
         }
 
-        // Call Gemini Vision API for OCR
-        // Use gemini-1.5-flash-001 which is the stable version supporting vision
-        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent';
+        // Call Gemini API for OCR - use Gemini 2.0 Flash Experimental which supports vision
+        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 
         // Remove data URL prefix to get base64
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
@@ -86,8 +71,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               parts: [
                 { text: '请识别图片中的所有文字，只返回提取的文本内容，不要添加任何说明或格式。如果没有文字，返回"未识别到文字"。' },
                 {
-                  inline_data: {
-                    mime_type: 'image/png',
+                  inlineData: {
+                    mimeType: 'image/png',
                     data: base64Image
                   }
                 }
