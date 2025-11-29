@@ -200,13 +200,19 @@ class ListenApp {
     this.floatIcon.classList.remove('visible');
   }
 
-  expandPlayer() {
-    // Get current icon position
-    const iconLeft = this.floatIcon.style.left;
-    const iconTop = this.floatIcon.style.top;
+  expandPlayer(skipPositioning = false) {
+    // Only copy icon position if we're expanding from the icon
+    // Skip if called from OCR (position already set)
+    if (!skipPositioning && this.floatIcon.style.left && this.floatIcon.style.top) {
+      const iconLeft = this.floatIcon.style.left;
+      const iconTop = this.floatIcon.style.top;
 
-    this.miniPlayer.style.left = iconLeft;
-    this.miniPlayer.style.top = iconTop;
+      // Only copy if icon has a valid position (not default)
+      if (iconLeft !== '0px' && iconTop !== '0px') {
+        this.miniPlayer.style.left = iconLeft;
+        this.miniPlayer.style.top = iconTop;
+      }
+    }
 
     this.hideIcon();
     this.miniPlayer.classList.add('active');
@@ -536,7 +542,7 @@ class ListenApp {
 
     // Play the extracted text
     this.selectedText = ocrResponse.text;
-    this.expandPlayer();
+    this.expandPlayer(true); // Skip positioning - we already set it above
     this.playText(ocrResponse.text);
   }
 
