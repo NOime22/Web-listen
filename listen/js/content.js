@@ -564,27 +564,32 @@ class ListenApp {
   async loadTesseract() {
     if (this.tesseractLoaded) return;
 
-    console.log('[Listen] Loading Tesseract.js...');
+    console.log('[Listen] Requesting Tesseract.js injection...');
 
     return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = chrome.runtime.getURL('lib/tesseract.min.js');
-      script.onload = () => {
-        console.log('[Listen] Tesseract.js loaded');
-        // Wait a bit for Tesseract to be available globally
-        setTimeout(() => {
+      chrome.runtime.sendMessage({ action: 'injectTesseract' }, (response) => {
+        if (chrome.runtime.lastError || !response || !response.success) {
+          reject(new Error('Failed to inject Tesseract: ' + (chrome.runtime.lastError?.message || response?.error || 'Unknown error')));
+          return;
+        }
+
+        console.log('[Listen] Tesseract.js injected, waiting for initialization...');
+
+        // Wait for Tesseract to be available
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+          attempts++;
           if (typeof Tesseract !== 'undefined') {
+            clearInterval(checkInterval);
+            console.log('[Listen] Tesseract.js initialized');
             this.tesseractLoaded = true;
             resolve();
-          } else {
-            reject(new Error('Tesseract global object not found'));
+          } else if (attempts > 50) { // 5 seconds timeout
+            clearInterval(checkInterval);
+            reject(new Error('Timeout waiting for Tesseract initialization'));
           }
         }, 100);
-      };
-      script.onerror = () => {
-        reject(new Error('Failed to load Tesseract.js'));
-      };
-      document.head.appendChild(script);
+      });
     });
   }
 

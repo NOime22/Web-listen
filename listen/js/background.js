@@ -44,6 +44,20 @@ chrome.commands.onCommand.addListener((command) => {
 
 // 监听消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'injectTesseract') {
+    chrome.scripting.executeScript({
+      target: { tabId: sender.tab.id },
+      files: ['lib/tesseract.min.js']
+    }, () => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        sendResponse({ success: true });
+      }
+    });
+    return true;
+  }
+
   if (request.action === "processScreenshot") {
     (async () => {
       try {
@@ -57,8 +71,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           throw new Error('请先在设置中配置 API Key');
         }
 
-        // Call Gemini Vision API for OCR - use default flash model with vision
-        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        // Call Gemini Vision API for OCR
+        // Use gemini-1.5-flash-001 which is the stable version supporting vision
+        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent';
 
         // Remove data URL prefix to get base64
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');
