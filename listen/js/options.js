@@ -78,7 +78,22 @@ function saveSettings() {
     autoDetectLanguage: true,
     preferredLanguage: 'zh-CN'
   };
-});
+
+  chrome.storage.sync.set(settings, () => {
+    const s = document.createElement('div');
+    s.textContent = '设置已保存';
+    s.style.position = 'fixed';
+    s.style.bottom = '20px';
+    s.style.left = '50%';
+    s.style.transform = 'translateX(-50%)';
+    s.style.backgroundColor = '#14AE5C';
+    s.style.color = '#fff';
+    s.style.padding = '10px 16px';
+    s.style.borderRadius = '6px';
+    s.style.zIndex = '1000';
+    document.body.appendChild(s);
+    setTimeout(() => { document.body.removeChild(s); }, 1600);
+  });
 }
 
 // 重置默认
