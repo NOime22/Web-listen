@@ -30,7 +30,13 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === 'ocr-and-read') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'captureScreen' });
+        // Add error handling
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'captureScreen' }, (response) => {
+          // Ignore connection errors - content script will handle it
+          if (chrome.runtime.lastError) {
+            console.log('Content script not ready, but message sent');
+          }
+        });
       }
     });
   }
@@ -52,7 +58,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         // Call Gemini Vision API for OCR
-        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent';
 
         // Remove data URL prefix to get base64
         const base64Image = imageData.replace(/^data:image\/\w+;base64,/, '');

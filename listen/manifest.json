@@ -62,7 +62,8 @@
     {
       "resources": [
         "css/*.css",
-        "images/*"
+        "images/*",
+        "lib/*"
       ],
       "matches": [
         "<all_urls>"

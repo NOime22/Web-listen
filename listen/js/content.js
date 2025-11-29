@@ -11,6 +11,8 @@ class ListenApp {
     this.isReading = false;
     this.audioPlayer = null;
     this.currentRate = 1.0;
+    this.tesseractWorker = null;
+    this.tesseractLoaded = false;
 
     this.init();
   }
@@ -335,24 +337,34 @@ class ListenApp {
 
   listenToMessages() {
     chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+      console.log('[Listen] Received message:', req.action);
+
       if (req.action === 'readText') {
         this.selectedText = req.text;
         this.expandPlayer();
         this.playText(req.text);
+        sendResponse({ success: true });
+        return true;
       } else if (req.action === 'captureScreen') {
+        console.log('[Listen] Starting screen capture...');
         this.startScreenCapture();
+        sendResponse({ success: true });
+        return true;
       }
     });
   }
 
   startScreenCapture() {
+    console.log('[Listen] startScreenCapture called');
     // Create overlay for screenshot selection
     this.createCaptureOverlay();
   }
 
   createCaptureOverlay() {
+    console.log('[Listen] createCaptureOverlay called');
     // Remove existing overlay if any
     if (this.captureOverlay) {
+      console.log('[Listen] Removing existing overlay');
       this.captureOverlay.remove();
     }
 
@@ -495,20 +507,34 @@ class ListenApp {
     // Crop the selected region
     const croppedImage = await this.cropImage(response.dataUrl, rect);
 
-    // Send to background for OCR
-    const ocrResponse = await chrome.runtime.sendMessage({
-      action: 'processScreenshot',
-      imageData: croppedImage
-    });
+    // Get OCR settings
+    const settings = await chrome.runtime.sendMessage({ action: 'getSettings', keys: ['ocrMethod', 'ocrLanguage', 'apiKey'] });
 
-    if (!ocrResponse.success) {
-      throw new Error(ocrResponse.error || 'OCR识别失败');
+    let extractedText;
+
+    if (settings.ocrMethod === 'local') {
+      // Use local Tesseract OCR
+      console.log('[Listen] Using local OCR...');
+      extractedText = await this.processWithTesseract(croppedImage, settings.ocrLanguage || 'chi_sim+eng');
+    } else {
+      // Use cloud OCR
+      console.log('[Listen] Using cloud OCR...');
+      const ocrResponse = await chrome.runtime.sendMessage({
+        action: 'processScreenshot',
+        imageData: croppedImage
+      });
+
+      if (!ocrResponse.success) {
+        throw new Error(ocrResponse.error || 'OCR识别失败');
+      }
+
+      extractedText = ocrResponse.text;
     }
 
     // Play the extracted text
-    this.selectedText = ocrResponse.text;
+    this.selectedText = extractedText;
     this.expandPlayer();
-    this.playText(ocrResponse.text);
+    this.playText(extractedText);
   }
 
   cropImage(dataUrl, rect) {
@@ -533,6 +559,61 @@ class ListenApp {
       };
       img.src = dataUrl;
     });
+  }
+
+  async loadTesseract() {
+    if (this.tesseractLoaded) return;
+
+    console.log('[Listen] Loading Tesseract.js...');
+
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('lib/tesseract.min.js');
+      script.onload = () => {
+        console.log('[Listen] Tesseract.js loaded');
+        this.tesseractLoaded = true;
+        resolve();
+      };
+      script.onerror = () => {
+        reject(new Error('Failed to load Tesseract.js'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async processWithTesseract(imageData, language = 'chi_sim+eng') {
+    try {
+      // Load Tesseract if not already loaded
+      if (!this.tesseractLoaded) {
+        await this.loadTesseract();
+      }
+
+      // Initialize worker if needed
+      if (!this.tesseractWorker) {
+        console.log('[Listen] Creating Tesseract worker...');
+        const { createWorker } = Tesseract;
+        this.tesseractWorker = await createWorker(language, 1, {
+          logger: m => console.log('[Tesseract]', m),
+          langPath: 'https://tessdata.projectnaptha.com/4.0.0'
+        });
+        console.log('[Listen] Tesseract worker created');
+      }
+
+      // Perform OCR
+      console.log('[Listen] Running OCR with language:', language);
+      const { data: { text, confidence } } = await this.tesseractWorker.recognize(imageData);
+
+      console.log('[Listen] OCR completed, confidence:', confidence);
+
+      if (!text || text.trim().length === 0) {
+        throw new Error('未识别到文字内容');
+      }
+
+      return text.trim();
+    } catch (error) {
+      console.error('[Listen] Tesseract OCR failed:', error);
+      throw new Error('本地OCR识别失败: ' + error.message);
+    }
   }
 }
 

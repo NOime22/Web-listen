@@ -11,7 +11,9 @@ export const Config = {
         volume: 1.0,
         preferredLanguage: 'zh-CN',
         enableOCR: true,
-        enableFloatingButton: true
+        enableFloatingButton: true,
+        ocrMethod: 'local', // 'local' (Tesseract.js) or 'cloud' (Gemini API)
+        ocrLanguage: 'chi_sim+eng' // Tesseract language: chi_sim, chi_tra, eng, or combinations
     },
 
     providers: {
