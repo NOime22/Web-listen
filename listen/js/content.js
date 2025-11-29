@@ -571,8 +571,15 @@ class ListenApp {
       script.src = chrome.runtime.getURL('lib/tesseract.min.js');
       script.onload = () => {
         console.log('[Listen] Tesseract.js loaded');
-        this.tesseractLoaded = true;
-        resolve();
+        // Wait a bit for Tesseract to be available globally
+        setTimeout(() => {
+          if (typeof Tesseract !== 'undefined') {
+            this.tesseractLoaded = true;
+            resolve();
+          } else {
+            reject(new Error('Tesseract global object not found'));
+          }
+        }, 100);
       };
       script.onerror = () => {
         reject(new Error('Failed to load Tesseract.js'));
@@ -586,6 +593,11 @@ class ListenApp {
       // Load Tesseract if not already loaded
       if (!this.tesseractLoaded) {
         await this.loadTesseract();
+      }
+
+      // Check if Tesseract is available
+      if (typeof Tesseract === 'undefined') {
+        throw new Error('Tesseract library not loaded');
       }
 
       // Initialize worker if needed
