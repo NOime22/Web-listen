@@ -23,7 +23,8 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  pointer-events: auto;
+  pointer-events: none;
+  /* Disabled by default - only clickable when visible */
   transition: transform 0.2s var(--listen-ease), opacity 0.2s ease;
   opacity: 0;
   transform: scale(0.8);
@@ -32,6 +33,8 @@
 .listen-float-icon.visible {
   opacity: 1;
   transform: scale(1);
+  pointer-events: auto;
+  /* Enable clicking only when visible */
 }
 
 .listen-float-icon:hover {
