@@ -7,6 +7,8 @@ const toggleApiKeyBtn = document.getElementById('toggleApiKey');
 const apiBaseUrlInput = document.getElementById('apiBaseUrl');
 const enableFloatingButtonToggle = document.getElementById('enableFloatingButton');
 const enableOCRToggle = document.getElementById('enableOCR');
+const ocrMethodSelect = document.getElementById('ocrMethod');
+const ocrLanguageSelect = document.getElementById('ocrLanguage');
 const testAIButton = document.getElementById('testAIButton');
 const testAIResult = document.getElementById('testAIResult');
 const resetBtn = document.getElementById('resetBtn');
@@ -42,9 +44,10 @@ function loadSettings() {
   chrome.storage.sync.get(defaultSettings, (settings) => {
     if (aiProviderSelect) aiProviderSelect.value = settings.aiProvider || 'gemini';
     if (apiKeyInput) apiKeyInput.value = settings.apiKey || '';
-    if (apiBaseUrlInput) apiBaseUrlInput.value = settings.apiBaseUrl || providerPresets[aiProviderSelect.value]?.apiBaseUrl || '';
     if (enableFloatingButtonToggle) enableFloatingButtonToggle.checked = settings.enableFloatingButton !== false;
     if (enableOCRToggle) enableOCRToggle.checked = settings.enableOCR !== false;
+    if (ocrMethodSelect) ocrMethodSelect.value = settings.ocrMethod || 'local';
+    if (ocrLanguageSelect) ocrLanguageSelect.value = settings.ocrLanguage || 'chi_sim+eng';
   });
 }
 
@@ -62,6 +65,8 @@ function saveSettings() {
     aiVoice: voiceByProvider,
     enableFloatingButton: enableFloatingButtonToggle ? enableFloatingButtonToggle.checked : true,
     enableOCR: enableOCRToggle ? enableOCRToggle.checked : true,
+    ocrMethod: ocrMethodSelect ? ocrMethodSelect.value : 'local',
+    ocrLanguage: ocrLanguageSelect ? ocrLanguageSelect.value : 'chi_sim+eng',
     // 保留但不在 UI 展示
     rate: 1.0,
     pitch: 1.0,
@@ -69,13 +74,7 @@ function saveSettings() {
     autoDetectLanguage: true,
     preferredLanguage: 'zh-CN'
   };
-  chrome.storage.sync.set(settings, () => {
-    const s = document.createElement('div');
-    s.textContent = '设置已保存';
-    s.style.position = 'fixed'; s.style.bottom = '20px'; s.style.left = '50%'; s.style.transform = 'translateX(-50%)';
-    s.style.backgroundColor = '#14AE5C'; s.style.color = '#fff'; s.style.padding = '10px 16px'; s.style.borderRadius = '6px'; s.style.zIndex = '1000';
-    document.body.appendChild(s); setTimeout(() => { document.body.removeChild(s); }, 1600);
-  });
+});
 }
 
 // 重置默认
