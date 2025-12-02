@@ -15,7 +15,25 @@ const ocrLanguageSelect = document.getElementById('ocrLanguage');
 const testAIButton = document.getElementById('testAIButton');
 const testAIResult = document.getElementById('testAIResult');
 const resetBtn = document.getElementById('resetBtn');
-const saveBtn = document.getElementById('saveBtn');
+const saveBtnGeneral = document.getElementById('saveBtnGeneral');
+const saveBtnAI = document.getElementById('saveBtnAI');
+const saveBtnOCR = document.getElementById('saveBtnOCR');
+
+// Tab Switching Logic
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    // Remove active class from all items and contents
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+
+    // Add active class to clicked item
+    item.classList.add('active');
+
+    // Show corresponding content
+    const tabId = item.getAttribute('data-tab');
+    document.getElementById(tabId).classList.add('active');
+  });
+});
 
 // 默认设置（按要求：默认 Gemini；丢弃本地TTS；自动检测语言写死为 true、无自动朗读）
 import { Config } from './config.js';
@@ -156,7 +174,9 @@ if (toggleApiKeyBtn) toggleApiKeyBtn.addEventListener('click', () => {
   toggleApiKeyBtn.setAttribute('aria-pressed', showing ? 'true' : 'false');
   toggleApiKeyBtn.title = showing ? '隐藏' : '显示';
 });
-if (saveBtn) saveBtn.addEventListener('click', saveSettings);
+if (saveBtnGeneral) saveBtnGeneral.addEventListener('click', saveSettings);
+if (saveBtnAI) saveBtnAI.addEventListener('click', saveSettings);
+if (saveBtnOCR) saveBtnOCR.addEventListener('click', saveSettings);
 if (resetBtn) resetBtn.addEventListener('click', resetToDefaults);
 if (testAIButton) testAIButton.addEventListener('click', testAI);
 

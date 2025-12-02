@@ -2,37 +2,109 @@
   /* Colors */
   --listen-primary: #1ADB87;
   --listen-primary-hover: #14AE6C;
+  --listen-danger: #FF4B4B;
 
-  /* Glass Backgrounds */
-  --listen-bg-glass: rgba(20, 20, 20, 0.65);
-  /* More transparent */
-  --listen-bg-glass-light: rgba(255, 255, 255, 0.08);
-  --listen-bg-glass-strong: rgba(10, 10, 10, 0.85);
+  /* Glass Backgrounds (Light Theme) */
+  --listen-bg-glass: rgba(255, 255, 255, 0.85);
+  --listen-bg-glass-hover: rgba(255, 255, 255, 0.95);
+  --listen-bg-glass-dark: rgba(240, 240, 240, 0.9);
 
-  --listen-text: #FFFFFF;
-  --listen-text-secondary: rgba(255, 255, 255, 0.6);
-  --listen-border: rgba(255, 255, 255, 0.12);
+  /* Text Colors */
+  --listen-text: #1A1A1A;
+  --listen-text-secondary: #666666;
+  --listen-text-light: #FFFFFF;
+  /* For primary buttons */
+
+  /* Borders */
+  --listen-border: rgba(0, 0, 0, 0.08);
+  --listen-border-light: rgba(255, 255, 255, 0.4);
 
   /* Shadows */
-  --listen-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.2);
-  --listen-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --listen-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --listen-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --listen-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.18);
+  --listen-shadow-glow: 0 0 20px rgba(26, 219, 135, 0.4);
 
   /* Blur */
-  --listen-blur: 20px;
+  --listen-blur: 16px;
+
+  /* Radius */
+  --listen-radius-sm: 8px;
+  --listen-radius-md: 12px;
+  --listen-radius-lg: 16px;
+  --listen-radius-full: 9999px;
 
   /* Typography */
   --listen-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --listen-font-size-sm: 12px;
+  --listen-font-size-base: 14px;
+  --listen-font-size-lg: 16px;
 
   /* Animation */
   --listen-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --listen-transition: all 0.3s var(--listen-ease);
+}
+
+/* Utility Classes */
+.listen-glass {
+  background: var(--listen-bg-glass);
+  backdrop-filter: blur(var(--listen-blur));
+  -webkit-backdrop-filter: blur(var(--listen-blur));
+  border: 1px solid var(--listen-border);
+  box-shadow: var(--listen-shadow-md);
+}
+
+.listen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: var(--listen-radius-md);
+  font-family: var(--listen-font);
+  font-size: var(--listen-font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--listen-transition);
+  border: none;
+  outline: none;
+  gap: 8px;
+}
+
+.listen-btn-primary {
+  background: var(--listen-primary);
+  color: var(--listen-text);
+  /* Black text on green looks better/more readable */
+  box-shadow: 0 4px 12px rgba(26, 219, 135, 0.3);
+}
+
+.listen-btn-primary:hover {
+  background: var(--listen-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(26, 219, 135, 0.4);
+}
+
+.listen-btn-secondary {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--listen-text);
+}
+
+.listen-btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.listen-btn-icon {
+  padding: 8px;
+  border-radius: var(--listen-radius-full);
 }
 
 /* Global Background for Extension Pages (Popup/Options) */
 .listen-page-bg {
-  background-color: #050505;
+  background-color: #F5F7FA;
   background-image:
-    radial-gradient(circle at 0% 0%, rgba(26, 219, 135, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(26, 219, 135, 0.1) 0%, transparent 50%);
+    radial-gradient(circle at 0% 0%, rgba(26, 219, 135, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(26, 219, 135, 0.05) 0%, transparent 60%);
   background-attachment: fixed;
   min-height: 100vh;
+  color: var(--listen-text);
+  font-family: var(--listen-font);
 }

@@ -67,18 +67,19 @@ class ListenApp {
     // Float Icon
     this.floatIcon = document.createElement('div');
     this.floatIcon.className = 'listen-float-icon';
-    this.floatIcon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+    this.floatIcon.innerHTML = `<img src="${chrome.runtime.getURL('images/logo.png')}" style="width: 60%; height: 60%; object-fit: contain;">`;
     this.container.appendChild(this.floatIcon);
 
     // Mini Player
     this.miniPlayer = document.createElement('div');
     this.miniPlayer.className = 'listen-mini-player';
+    this.miniPlayer.style.display = 'none'; // Prevent FOUC
 
-    // Play/Pause Button (Start with Play Icon)
+    // Play/Pause Button
     this.playPauseBtn = document.createElement('button');
     this.playPauseBtn.className = 'listen-btn listen-btn-primary';
     this.playPauseBtn.id = 'listen-play-pause';
-    this.playPauseBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    this.playPauseBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 
     // Visualizer
     const visualizer = document.createElement('div');
@@ -94,19 +95,33 @@ class ListenApp {
     this.speedToggle.className = 'listen-speed';
     this.speedToggle.id = 'listen-speed-toggle';
     this.speedToggle.textContent = '1.0x';
+    this.speedToggle.title = 'Speed';
+
+    // Actions Container
+    const actions = document.createElement('div');
+    actions.className = 'listen-actions';
+
+    // Minimize Button
+    this.minimizeBtn = document.createElement('button');
+    this.minimizeBtn.className = 'listen-btn listen-minimize';
+    this.minimizeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12h14"/></svg>'; // Minus icon
+    this.minimizeBtn.title = 'Minimize';
 
     // Close Button
     this.closeBtn = document.createElement('button');
     this.closeBtn.className = 'listen-btn listen-close';
     this.closeBtn.id = 'listen-close-btn';
-    // Use explicit commands and spaces to avoid parsing errors
     this.closeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.41 L17.59 5 L12 10.59 L6.41 5 L5 6.41 L10.59 12 L5 17.59 L6.41 19 L12 13.41 L17.59 19 L19 17.59 L13.41 12 Z"/></svg>';
+    this.closeBtn.title = 'Close';
+
+    actions.appendChild(this.minimizeBtn);
+    actions.appendChild(this.closeBtn);
 
     // Append all to miniPlayer
     this.miniPlayer.appendChild(this.playPauseBtn);
     this.miniPlayer.appendChild(visualizer);
     this.miniPlayer.appendChild(this.speedToggle);
-    this.miniPlayer.appendChild(this.closeBtn);
+    this.miniPlayer.appendChild(actions);
 
     this.container.appendChild(this.miniPlayer);
 
@@ -129,7 +144,11 @@ class ListenApp {
 
     this.playPauseBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.togglePlay();
+      if (this.miniPlayer.classList.contains('collapsed')) {
+        this.toggleMinimize(); // Expand if collapsed
+      } else {
+        this.togglePlay();
+      }
     });
 
     this.speedToggle.addEventListener('click', (e) => {
@@ -137,11 +156,20 @@ class ListenApp {
       this.cycleSpeed();
     });
 
+    this.minimizeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleMinimize();
+    });
+
     this.closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.stop();
       this.hidePlayer();
     });
+  }
+
+  toggleMinimize() {
+    this.miniPlayer.classList.toggle('collapsed');
   }
 
   handleSelection(e) {
@@ -218,6 +246,7 @@ class ListenApp {
     }
 
     this.hideIcon();
+    this.miniPlayer.style.display = ''; // Remove inline hide so CSS takes over
     this.miniPlayer.classList.add('active');
   }
 
@@ -378,6 +407,7 @@ class ListenApp {
   createEditModal() {
     this.editModalOverlay = document.createElement('div');
     this.editModalOverlay.className = 'listen-edit-modal-overlay';
+    this.editModalOverlay.style.display = 'none'; // Prevent FOUC
 
     this.editModalOverlay.innerHTML = `
       <div class="listen-edit-modal">
@@ -590,6 +620,7 @@ class ListenApp {
       // Show edit modal
       const textarea = this.editModalOverlay.querySelector('.listen-edit-textarea');
       textarea.value = ocrResponse.text;
+      this.editModalOverlay.style.display = ''; // Remove inline hide so CSS takes over
       this.editModalOverlay.classList.add('visible');
       textarea.focus();
     } else {

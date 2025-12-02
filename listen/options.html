@@ -7,177 +7,428 @@
   <link rel="stylesheet" href="css/design-system.css">
   <style>
     body {
-      background: #111;
+      margin: 0;
+      padding: 0;
       color: var(--listen-text);
       font-family: var(--listen-font);
-      margin: 0;
-      padding: 40px;
+      background-color: #F5F7FA;
+      height: 100vh;
+      overflow: hidden;
       display: flex;
-      justify-content: center;
+    }
+
+    /* Layout */
+    .sidebar {
+      width: 240px;
+      background: #FFFFFF;
+      border-right: 1px solid var(--listen-border);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+      background-color: #F5F7FA;
     }
 
     .container {
-      width: 100%;
       max-width: 600px;
+      margin: 0 auto;
     }
 
-    h1 {
-      margin-bottom: 32px;
+    /* Sidebar Components */
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
+      padding-left: 12px;
+    }
+
+    .logo {
+      width: 32px;
+      height: 32px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .app-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--listen-text);
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: var(--listen-radius-md);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--listen-text-secondary);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--listen-text);
+    }
+
+    .nav-item.active {
+      background: rgba(26, 219, 135, 0.1);
+      color: var(--listen-primary);
       font-weight: 600;
     }
 
-    .section {
-      background: rgba(255, 255, 255, 0.05);
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* Main Content Components */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--listen-text);
+    }
+
+    .card {
+      background: #FFFFFF;
       border: 1px solid var(--listen-border);
-      border-radius: 16px;
+      border-radius: var(--listen-radius-lg);
       padding: 24px;
+      box-shadow: var(--listen-shadow-sm);
       margin-bottom: 24px;
     }
 
-    .section-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 16px;
-      color: var(--listen-primary);
+    .form-group {
+      margin-bottom: 20px;
     }
 
-    .form-group {
-      margin-bottom: 16px;
+    .form-group:last-child {
+      margin-bottom: 0;
     }
 
     label {
       display: block;
       margin-bottom: 8px;
       font-size: 14px;
+      font-weight: 500;
+      color: var(--listen-text);
+    }
+
+    .help-text {
+      font-size: 12px;
       color: var(--listen-text-secondary);
+      margin-top: 6px;
+      line-height: 1.4;
     }
 
     input[type="text"],
     input[type="password"],
     select {
       width: 100%;
-      padding: 10px 12px;
-      background: rgba(0, 0, 0, 0.3);
+      padding: 12px;
+      background: #F9FAFB;
       border: 1px solid var(--listen-border);
       border-radius: 8px;
       color: var(--listen-text);
       font-size: 14px;
+      font-family: inherit;
       box-sizing: border-box;
+      transition: all 0.2s;
     }
 
     input:focus,
     select:focus {
       outline: none;
       border-color: var(--listen-primary);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(26, 219, 135, 0.1);
     }
 
     .toggle-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
-    button {
-      background: var(--listen-primary);
-      color: #000;
-      border: none;
-      padding: 10px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
+    .toggle-row:last-child {
+      border-bottom: none;
     }
 
-    button:hover {
-      opacity: 0.9;
-    }
-
-    button.secondary {
-      background: rgba(255, 255, 255, 0.1);
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 500;
       color: var(--listen-text);
     }
 
+    /* Custom Checkbox (Switch) */
+    input[type="checkbox"] {
+      appearance: none;
+      width: 40px;
+      height: 24px;
+      background: #E5E7EB;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    input[type="checkbox"]::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    input[type="checkbox"]:checked {
+      background: var(--listen-primary);
+    }
+
+    input[type="checkbox"]:checked::after {
+      transform: translateX(16px);
+    }
+
+    /* Buttons */
     .actions {
       display: flex;
       gap: 12px;
       margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--listen-border);
+    }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    button.primary {
+      background: var(--listen-primary);
+      color: white;
+      box-shadow: 0 2px 4px rgba(26, 219, 135, 0.2);
+    }
+
+    button.primary:hover {
+      background: var(--listen-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(26, 219, 135, 0.3);
+    }
+
+    button.secondary {
+      background: white;
+      border: 1px solid var(--listen-border);
+      color: var(--listen-text);
+    }
+
+    button.secondary:hover {
+      background: #F9FAFB;
+      border-color: #D1D5DB;
+    }
+
+    button.danger {
+      background: transparent;
+      color: #EF4444;
+    }
+
+    button.danger:hover {
+      background: #FEF2F2;
+    }
+
+    #testAIResult {
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 500;
     }
   </style>
 </head>
 
-<body class="listen-page-bg">
-  <div class="container">
-    <h1>Settings</h1>
-
-    <div class="section">
-      <div class="section-title">AI Provider</div>
-      <div class="form-group">
-        <label>Provider</label>
-        <select id="aiProvider">
-          <option value="gemini">Google Gemini</option>
-          <option value="openai">OpenAI</option>
-          <option value="google">Google Cloud TTS</option>
-        </select>
+<body>
+  <div class="sidebar">
+    <div class="logo-area">
+      <div class="logo">
+        <img src="images/logo.png" alt="Logo">
       </div>
-      <div class="form-group">
-        <label>API Key</label>
-        <input type="password" id="apiKey" placeholder="Enter your API Key">
+      <div class="app-name">Listen</div>
+    </div>
+    <div class="nav-menu">
+      <div class="nav-item active" data-tab="general">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+        </svg>
+        General
+      </div>
+      <div class="nav-item" data-tab="ai-provider">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+        </svg>
+        AI Provider
+      </div>
+      <div class="nav-item" data-tab="ocr">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M3 5v4h2V5h4V3H5c-1.1 0-2 .9-2 2zm2 10H3v4c0 1.1.9 2 2 2h4v-2H5v-4zm14 4h-4v2h4c1.1 0 2-.9 2-2v-4h-2v4zm0-16h-4v2h4v4h2V5c0-1.1-.9-2-2-2z" />
+        </svg>
+        OCR
       </div>
     </div>
+  </div>
 
-    <div class="section">
-      <div class="section-title">OCR Settings</div>
-      <div class="form-group">
-        <label>OCR Method</label>
-        <select id="ocrMethod">
-          <option value="local">Local OCR (Tesseract.js) - Free, Offline</option>
-          <option value="cloud">Cloud OCR (Gemini API) - Higher Accuracy</option>
-        </select>
-        <p style="font-size: 12px; color: var(--listen-text-secondary); margin-top: 8px;">
-          📌 Local OCR is free and works offline, but cloud OCR requires an API key and provides higher accuracy (~95%
-          vs ~85%).
-        </p>
-      </div>
-      <div class="form-group">
-        <label>OCR Language (for Local OCR)</label>
-        <select id="ocrLanguage">
-          <option value="chi_sim+eng">Simplified Chinese + English</option>
-          <option value="chi_tra+eng">Traditional Chinese + English</option>
-          <option value="eng">English Only</option>
-          <option value="chi_sim">Simplified Chinese Only</option>
-          <option value="chi_tra">Traditional Chinese Only</option>
-        </select>
-      </div>
-      <div class="toggle-row">
-        <span>Enable OCR Feature</span>
-        <input type="checkbox" id="enableOCR">
-      </div>
-      <div class="toggle-row">
-        <span>Edit Text Before Reading</span>
-        <input type="checkbox" id="ocrEditMode">
-      </div>
-    </div>
+  <div class="main-content">
+    <div class="container">
 
-    <div class="section">
-      <div class="section-title">Other Preferences</div>
-      <div class="toggle-row">
-        <span>Enable Floating Button</span>
-        <input type="checkbox" id="enableFloatingButton">
-      </div>
-      <div class="form-group" id="ocrModelGroup">
-        <label for="ocrModel">OCR Model</label>
-        <input type="text" id="ocrModel" list="ocrModelList" placeholder="Select or type custom model">
-        <datalist id="ocrModelList"></datalist>
-        <div class="help-text">Select a preset or type a custom model name (e.g. gemini-2.0-flash-exp)</div>
-      </div>
-    </div>
+      <!-- General Tab -->
+      <div id="general" class="tab-content active">
+        <h2>General Settings</h2>
+        <div class="card">
+          <div class="toggle-row">
+            <div class="toggle-label">Enable Floating Button</div>
+            <input type="checkbox" id="enableFloatingButton">
+          </div>
+          <div class="help-text">Show the "R" button when selecting text on web pages.</div>
+        </div>
 
-    <div class="actions">
-      <button id="saveBtn">Save Changes</button>
-      <button id="testAIButton" class="secondary">Test Connection</button>
+        <div class="actions">
+          <button id="saveBtnGeneral" class="primary">Save Changes</button>
+          <button id="resetBtn" class="danger">Reset to Defaults</button>
+        </div>
+      </div>
+
+      <!-- AI Provider Tab -->
+      <div id="ai-provider" class="tab-content">
+        <h2>AI Provider</h2>
+        <div class="card">
+          <div class="form-group">
+            <label>Provider</label>
+            <select id="aiProvider">
+              <option value="gemini">Google Gemini</option>
+              <option value="openai">OpenAI</option>
+              <option value="google">Google Cloud TTS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <input type="password" id="apiKey" placeholder="Enter your API Key">
+            <div class="help-text">Your key is stored locally in your browser.</div>
+          </div>
+          <div class="form-group">
+            <label>API Base URL (Optional)</label>
+            <input type="text" id="apiBaseUrl" placeholder="Default endpoint">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="saveBtnAI" class="primary">Save Changes</button>
+          <button id="testAIButton" class="secondary">Test Connection</button>
+        </div>
+        <div id="testAIResult"></div>
+      </div>
+
+      <!-- OCR Tab -->
+      <div id="ocr" class="tab-content">
+        <h2>OCR Settings</h2>
+        <div class="card">
+          <div class="toggle-row">
+            <div class="toggle-label">Enable OCR Feature</div>
+            <input type="checkbox" id="enableOCR">
+          </div>
+
+          <div class="form-group" style="margin-top: 20px;">
+            <label>OCR Method</label>
+            <select id="ocrMethod">
+              <option value="local">Local OCR (Tesseract.js)</option>
+              <option value="cloud">Cloud OCR (Gemini API)</option>
+            </select>
+            <div class="help-text">Cloud OCR is more accurate but requires an API key.</div>
+          </div>
+
+          <div class="form-group">
+            <label>OCR Model (Cloud)</label>
+            <input type="text" id="ocrModel" list="ocrModelList" placeholder="gemini-2.0-flash-exp">
+            <datalist id="ocrModelList"></datalist>
+          </div>
+
+          <div class="form-group">
+            <label>Language (Local)</label>
+            <select id="ocrLanguage">
+              <option value="chi_sim+eng">Simplified Chinese + English</option>
+              <option value="eng">English Only</option>
+            </select>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-label">Edit Text Before Reading</div>
+            <input type="checkbox" id="ocrEditMode">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="saveBtnOCR" class="primary">Save Changes</button>
+        </div>
+      </div>
+
     </div>
-    <div id="testAIResult" style="margin-top: 12px; font-size: 13px;"></div>
   </div>
 
   <script src="js/options.js" type="module"></script>

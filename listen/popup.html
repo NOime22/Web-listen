@@ -6,105 +6,153 @@
   <link rel="stylesheet" href="css/design-system.css">
   <style>
     body {
-      width: 280px;
-      height: 120px;
-      background-color: #050505;
-      background-image:
-        radial-gradient(circle at 0% 0%, rgba(26, 219, 135, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 100% 100%, rgba(26, 219, 135, 0.1) 0%, transparent 50%);
-      color: var(--listen-text);
-      font-family: var(--listen-font);
+      width: 300px;
+      padding: 16px;
       margin: 0;
-      padding: 12px;
-      overflow: hidden;
+      font-family: var(--listen-font);
+      color: var(--listen-text);
+      background-color: #F5F7FA;
+      /* Light bg */
     }
 
     .header {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--listen-border);
     }
 
     .logo {
-      width: 18px;
-      height: 18px;
-      background: var(--listen-primary);
-      border-radius: 4px;
+      width: 28px;
+      height: 28px;
+      background: white;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     h1 {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       margin: 0;
+      color: var(--listen-text);
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .action-btn {
       width: 100%;
-      padding: 8px 10px;
-      background: var(--listen-bg-glass-light);
-      border: 1px solid var(--listen-border);
-      border-radius: 8px;
-      color: var(--listen-text);
-      font-size: 12px;
+      padding: 12px;
+      border-radius: var(--listen-radius-md);
+      border: none;
+      font-family: var(--listen-font);
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
-      transition: all 0.2s;
-      margin-bottom: 6px;
+      transition: all 0.2s var(--listen-ease);
     }
 
-    .action-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
+    .action-btn-primary {
+      background: var(--listen-primary);
+      color: var(--listen-text-light);
+      box-shadow: var(--listen-shadow-sm);
+    }
+
+    .action-btn-primary:hover {
+      background: var(--listen-primary-hover);
       transform: translateY(-1px);
+      box-shadow: var(--listen-shadow-md);
     }
 
     .action-btn svg {
-      fill: var(--listen-primary);
-      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
     }
 
     .footer {
-      margin-top: 6px;
-      border-top: 1px solid var(--listen-border);
-      padding-top: 6px;
+      margin-top: 20px;
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
     }
 
-    .icon-link {
+    .settings-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       color: var(--listen-text-secondary);
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
-      padding: 2px;
+      padding: 6px 12px;
+      border-radius: var(--listen-radius-full);
+      transition: all 0.2s;
     }
 
-    .icon-link:hover {
+    .settings-link:hover {
+      background: rgba(0, 0, 0, 0.05);
       color: var(--listen-text);
+    }
+
+    .settings-link svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
     }
   </style>
 </head>
 
 <body>
   <div class="header">
-    <div class="logo"></div>
-    <h1>Listen</h1>
+    <div class="logo">
+      <img src="images/logo.png" alt="Logo">
+    </div>
+    <h1>Listen - AI Web Reader & OCR</h1>
   </div>
 
-  <button class="action-btn" id="readScreenshot">
-    <svg viewBox="0 0 24 24" width="20" height="20">
-      <path
-        d="M21 3H3C1.9 3 1 3.9 1 5V19C1 20.1 1.9 21 3 21H21C22.1 21 23 20.1 23 19V5C23 3.9 22.1 3 21 3ZM5 17L8.5 12.5L11 15.5L14.5 11L19 17H5Z" />
-    </svg>
-    从截图中朗读
-  </button>
+  <div class="actions">
+    <button class="action-btn action-btn-primary" id="readSelection">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M14 17H7V7h7v10zm2-12H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-2 9h-4v-2h4v2z" />
+      </svg>
+      Read Selected Text
+    </button>
+
+    <button class="action-btn action-btn-primary" id="readScreenshot">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M21 3H3C1.9 3 1 3.9 1 5V19C1 20.1 1.9 21 3 21H21C22.1 21 23 20.1 23 19V5C23 3.9 22.1 3 21 3ZM5 17L8.5 12.5L11 15.5L14.5 11L19 17H5Z" />
+      </svg>
+      Screenshot OCR
+    </button>
+  </div>
 
   <div class="footer">
-    <div class="icon-link" id="openSettings" title="设置">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+    <div class="settings-link" id="openSettings">
+      <svg viewBox="0 0 24 24">
         <path
           d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
       </svg>
+      Settings
     </div>
   </div>
 
