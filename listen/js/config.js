@@ -3,7 +3,7 @@ export const Config = {
         autoDetectLanguage: true,
         useAdvancedAI: true,
         aiProvider: 'gemini',
-        apiKey: 'AIzaSyCS5PHtyldxjajMFaAcqXDwfWg1cqA5f7c', // User requested hardcoded key for testing
+        apiKey: '', // Users need to add their own API key in settings
         apiBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent',
         aiVoice: 'Kore',
         rate: 1.0,

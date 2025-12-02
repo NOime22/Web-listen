@@ -73,7 +73,7 @@
 ### 本地测试固定参数（仅本地）
 - Model：Gemini
 - URL：`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent`
-- API KEY：`AIzaSyCS5PHtyldxjajMFaAcqXDwfWg1cqA5f7c`
+- API KEY：`[已移除 - 请使用自己的 API Key]`
 
 > 仅用于本地调试与便捷复现。生产发布前必须移除硬编码，并要求用户在设置页填写自己的 Key。
 
