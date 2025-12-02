@@ -1,5 +1,9 @@
 # Listen - AI语音朗读助手
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Chrome](https://img.shields.io/badge/chrome-extension-orange)
+
 Listen是一个Chrome浏览器扩展，利用AI技术朗读用户选中的文本或截图中的内容，帮助用户通过听觉学习和获取信息。
 
 ## 功能特点
