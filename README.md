@@ -1,92 +1,94 @@
-# Listen - AI语音朗读助手
+# Listen - AI Text-to-Speech Assistant
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Chrome](https://img.shields.io/badge/chrome-extension-orange)
 
-Listen是一个Chrome浏览器扩展，利用AI技术朗读用户选中的文本或截图中的内容，帮助用户通过听觉学习和获取信息。
+**[中文](README.zh-CN.md) | English**
 
-## 功能特点
+Listen is a Chrome browser extension that uses AI technology to read selected text or content from screenshots, helping users learn and acquire information through listening.
 
-- **划词即读**：选中网页上的文本，立即朗读
-- **截图朗读**：捕获屏幕区域，识别并朗读文本内容
-- **多语言支持**：自动检测文本语言，提供多种语音选择
-- **简洁界面**：操作简单直观，一键式体验
-- **自定义设置**：调整语速、音调、音量等参数
+## Features
 
-## 安装方法
+- **Text Selection Reading**: Select text on a webpage and listen to it instantly
+- **Screenshot OCR Reading**: Capture screen areas, recognize and read text content
+- **Multi-language Support**: Automatic language detection with multiple voice options
+- **Clean Interface**: Simple and intuitive operation with one-click experience
+- **Customizable Settings**: Adjust speech rate, pitch, volume, and other parameters
 
-### 从Chrome网上应用店安装（即将上线）
+## Installation
 
-1. 访问[Chrome网上应用店](https://chrome.google.com/webstore)
-2. 搜索"Listen - AI语音朗读助手"
-3. 点击"添加到Chrome"按钮
+### From Chrome Web Store (Coming Soon)
 
-### 手动安装（开发版）
+1. Visit [Chrome Web Store](https://chrome.google.com/webstore)
+2. Search for "Listen - AI Text-to-Speech Assistant"
+3. Click "Add to Chrome"
 
-1. 下载此仓库的ZIP文件或克隆仓库
-2. 解压缩文件（如果下载的是ZIP）
-3. 打开Chrome浏览器，输入`chrome://extensions/`
-4. 开启右上角的"开发者模式"
-5. 点击"加载已解压的扩展程序"
-6. 选择解压后的文件夹
+### Manual Installation (Developer Version)
 
-## 使用方法
+1. Download the ZIP file or clone this repository
+2. Extract the files (if downloaded as ZIP)
+3. Open Chrome browser and navigate to `chrome://extensions/`
+4. Enable "Developer mode" in the top right corner
+5. Click "Load unpacked extension"
+6. Select the extracted folder
 
-### 划词朗读
+## Usage
 
-1. 在网页上选中要朗读的文本
-2. 点击出现的悬浮按钮，或右键选择"朗读选中文本"
+### Text Selection Reading
 
-### 截图朗读
+1. Select the text you want to read on a webpage
+2. Click the floating button that appears, or right-click and select "Read selected text"
 
-1. 点击扩展图标打开弹出窗口
-2. 点击"从截图中朗读"按钮
-3. 选择屏幕区域
-4. 等待文本识别完成后自动朗读
+### Screenshot Reading (In Development)
 
-### 设置选项
+1. Click the extension icon to open the popup window
+2. Click the "Read from screenshot" button
+3. Select the screen area
+4. Wait for text recognition to complete and automatic reading
 
-1. 点击扩展图标打开弹出窗口
-2. 点击"高级设置"链接
-3. 调整语音、语速、音调等参数
-4. 点击"保存设置"按钮
+### Settings
 
-## 高级功能
+1. Click the extension icon to open the popup window
+2. Click the "Advanced Settings" link
+3. Adjust voice, speech rate, pitch, and other parameters
+4. Click the "Save Settings" button
 
-### 多语言支持
+## Advanced Features
 
-- 自动检测文本语言
-- 支持中文、英语、日语、韩语等多种语言
-- 可手动选择首选语言
+### Multi-language Support
 
-### AI语音
+- Automatic text language detection
+- Support for Chinese, English, Japanese, Korean, and more
+- Manual preferred language selection
 
-- 使用高级AI模型生成更自然的语音
-- 需要API密钥（支持多种AI服务提供商）
+### AI Voice (Coming Soon)
 
-## 隐私说明
+- Use advanced AI models to generate more natural speech
+- Requires API key (supports multiple AI service providers)
 
-Listen扩展尊重用户隐私：
+## Privacy Statement
 
-- 所有文本处理默认在本地进行
-- 不会收集或存储用户的文本内容
-- 使用高级AI功能时，文本会发送到相应的API服务
-- 用户API密钥安全存储在本地，不会上传到其他服务器
+Listen extension respects user privacy:
 
-## 开发信息
+- All text processing is done locally by default
+- Does not collect or store user text content
+- When using advanced AI features, text is sent to the corresponding API service
+- User API keys are securely stored locally and not uploaded to other servers
 
-- 版本：1.0.0
-- 开发语言：HTML, CSS, JavaScript
-- 许可证：MIT
+## Development Information
 
-## 反馈与支持
+- Version: 1.0.0
+- Development Languages: HTML, CSS, JavaScript
+- License: MIT
 
-如有问题或建议，请通过以下方式联系：
+## Feedback & Support
 
-- 提交GitHub Issue
-- 发送邮件至：[dsindigo2@gmail.com]
+If you have any questions or suggestions, please contact us through:
 
-## 许可证
+- Submit a GitHub Issue
+- Send email to: [Your Email Address]
 
-本项目采用MIT许可证。详情请参阅LICENSE文件。 
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
