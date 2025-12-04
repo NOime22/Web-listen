@@ -87,7 +87,7 @@ Listen extension respects user privacy:
 If you have any questions or suggestions, please contact us through:
 
 - Submit a GitHub Issue
-- Send email to: [Your Email Address]
+- Send email to: [dsindigo2@gmail.com]
 
 ## License
 
